@@ -1,0 +1,20 @@
+package com.wmsjenty.service;
+import java.sql.*;
+
+public class DBConnector {
+    private static final String URL = "jdbc:mysql://localhost:3306/wms-jenty";
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "Hetfield123!";
+
+    static {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USERNAME, PASSWORD);
+    }
+}
