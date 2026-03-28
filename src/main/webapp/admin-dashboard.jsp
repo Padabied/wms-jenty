@@ -1,3 +1,5 @@
+<%@ page import="com.wmsjenty.model.Category" %>
+<%@ page import="java.util.ArrayList" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -128,6 +130,33 @@
             width: 200px;        /* размер по желанию */
             height: auto;
         }
+
+        /* Контейнер для всего списка */
+        .category-container {
+            margin: 20px auto;
+            width: 80%;
+            display: none; /* По умолчанию скрыт */
+        }
+
+        /* Общий стиль для всех прямоугольников */
+        .category-item {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Отступ для подкатегорий (примерно 2 см) */
+        .child-category {
+            margin-left: 2cm;
+            background-color: #f9f9f9;
+            border-left: 4px solid #59a950; /* Зеленая полоска слева для красоты */
+        }
+
     </style>
 </head>
 <body>
@@ -170,83 +199,92 @@
 </div>
 
 <script>
+    function hideAllSections() {
+        var categoryBlock = document.getElementById('categoryListSection');
+        if (categoryBlock) {
+            categoryBlock.style.display = 'none';
+        }
+
+        // Завтра сюда добавим скрытие других блоков (аккаунты, поиск и т.д.)
+        // document.getElementById('accountsSection').style.display = 'none';
+    }
+
     // Функция обработки нажатия на кнопки
     function handleButtonClick(action) {
         console.log('Нажата кнопка:', action);
 
-        // Здесь вы можете добавить свою логику перехода или отправки формы
-        // Примеры:
+
         switch(action) {
             case 'search':
-                alert('Переход к поиску на складе');
-                // window.location.href = '/search';
+                hideAllSections();
                 break;
             case 'operations':
-                alert('Переход к операциям');
-                // window.location.href = '/operations';
+                hideAllSections();
                 break;
             case 'account_add':
-                alert('Добавление аккаунта');
-                // window.location.href = '/accounts/add';
+                hideAllSections();
                 break;
             case 'account_delete':
-                alert('Удаление аккаунта');
-                // window.location.href = '/accounts/delete';
+                hideAllSections();
                 break;
             case 'account_list':
-                alert('Список аккаунтов');
-                // window.location.href = '/accounts/list';
+                hideAllSections();
                 break;
             case 'category_add':
-                alert('Добавление категории');
-                // window.location.href = '/categories/add';
+                hideAllSections();
                 break;
             case 'category_delete':
-                alert('Удаление категории');
-                // window.location.href = '/categories/delete';
+                hideAllSections();
                 break;
             case 'category_list':
-                alert('Список категорий');
-                // window.location.href = '/categories/list';
-                break;
-            case 'category_edit':
-                alert('Редактирование категории');
-                // window.location.href = '/categories/edit';
+                var block = document.getElementById('categoryListSection');
+                if (block.style.display === "block") {
+                    block.style.display = "none";
+                } else {
+                    block.style.display = "block";
+                }
                 break;
             case 'adjustment':
-                alert('Корректировка остатков');
-                // window.location.href = '/adjustment';
+                hideAllSections();
                 break;
             default:
                 alert('Действие: ' + action);
         }
     }
 
-    // Функция для toggle dropdown на мобильных устройствах
-    // function toggleDropdown(dropdownId) {
-    //     // Проверяем ширину экрана для мобильной версии
-    //     if (window.innerWidth <= 768) {
-    //         const dropdown = document.getElementById(dropdownId);
-    //         dropdown.classList.toggle('active');
-    //     }
-    // }
-
-    // Закрываем выпадающие списки при клике вне области (для мобильной версии)
-    // document.addEventListener('click', function(event) {
-    //     if (window.innerWidth <= 768) {
-    //         const dropdowns = document.querySelectorAll('.dropdown');
-    //         dropdowns.forEach(dropdown => {
-    //             if (!dropdown.contains(event.target)) {
-    //                 dropdown.classList.remove('active');
-    //             }
-    //         });
-    //     }
-    // });
 </script>
 
-<div style="padding: 40px; text-align: center;">
-    <h1>Добро пожаловать, ${empty sessionScope.userName ? "Гость" : sessionScope.userName}!</h1>
+<div id="categoryListSection" class="category-container">
+    <%
+        ArrayList<Category> categories = (ArrayList<Category>) session.getAttribute("categories");
+
+        if (categories != null && !categories.isEmpty()) {
+            for (Category parent : categories) {
+                if (parent.getParentId() == null) {
+    %>
+    <div class="category-item" style="background-color: #e8f5e9; border-left: 5px solid #28521a;">
+        <strong><%= parent.getId() %> <%= parent.getName() %></strong>
+    </div>
+    <%
+        for (Category child : categories) {
+            if (child.getParentId() != null && child.getParentId().equals(parent.getId())) {
+    %>
+    <div class="category-item child-category">
+        <%= child.getId() %> <%= child.getName() %>
+    </div>
+    <%
+                    }
+                }
+            }
+        }
+    } else {
+    %>
+    <div class="category-item">Список категорий пуст</div>
+    <%
+        }
+    %>
 </div>
+
 <img src="${pageContext.request.contextPath}/images/logo.svg"
      class="logo"
      alt="decorative">

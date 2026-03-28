@@ -2,6 +2,9 @@ package com.wmsjenty.model;
 
 public class User {
     private int id;
+    private String name;
+    private String login;
+    private String role;
 
     public User(int id, String name, String login, String role) {
         this.id = id;
@@ -9,10 +12,6 @@ public class User {
         this.login = login;
         this.role = role;
     }
-
-    private String name;
-    private String login;
-    private String role;
 
     public int getId() {
         return id;
