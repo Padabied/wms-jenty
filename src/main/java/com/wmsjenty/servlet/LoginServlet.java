@@ -22,6 +22,19 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        //Выход из системы
+        String action = request.getParameter("action");
+
+        if (action != null && action.equals("logout")) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        //Вход в систему
         String login = request.getParameter("login");
         String password = request.getParameter("password");
 

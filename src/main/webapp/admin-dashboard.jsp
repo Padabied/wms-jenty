@@ -92,7 +92,6 @@
             color: #667eea;
         }
 
-        /* выпадающий список при наведении */
         .dropdown:hover .dropdown-content {
             display: block;
         }
@@ -183,6 +182,16 @@
             border-bottom: none;
         }
 
+        .user-dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .logout-dropdown {
+            right: 0;
+            left: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
         .role-badge {
             background-color: #59a950;
             color: white;
@@ -191,7 +200,82 @@
             font-size: 12px;
             font-weight: bold;
         }
+        :root {
+            --primary-color: #59a950;
+            --primary-hover: #4a8e42;
+            --bg-color: #f4f7f6;
+            --border-color: #e0e0e0;
+            --text-color: #333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .user-form-card {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            box-shadow: var(--shadow);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
+        .user-form-card h2 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: var(--text-color);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box; /* Важно для правильного расчета ширины */
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(89, 169, 80, 0.15);
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-submit i {
+            margin-right: 8px;
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 15px;
+        }
     </style>
 </head>
 <body>
@@ -227,21 +311,34 @@
         <button class="nav-btn" onclick="handleButtonClick('adjustment')"><i class="fa-solid fa-pencil"></i> Корректировка остатков</button>
     </div>
 
-    <div class="user-info">
-        <i class="fa-regular fa-user"></i> ${empty sessionScope.userName ? "Гость" : sessionScope.userName}
+    <div class="dropdown user-dropdown">
+        <div class="user-info">
+            <i class="fa-regular fa-user"></i>
+            ${empty sessionScope.userName ? "Гость" : sessionScope.userName}
+            <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 5px;"></i>
+        </div>
+
+        <div class="dropdown-content logout-dropdown">
+            <form action="${pageContext.request.contextPath}/login" method="POST" style="margin: 0;">
+                <input type="hidden" name="action" value="logout">
+                <button type="submit" style="display: block; width: 100%; border: none; background: none; text-align: left; padding: 12px 16px; cursor: pointer;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Выход
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
 <%-- Проверка сообщения об успехе операции --%>
 <%
-    Boolean success = (Boolean) session.getAttribute("categorySuccess");
+    Boolean success = (Boolean) session.getAttribute("successMessage");
     if (success != null && success) {
 %>
 <div id="successMessage" class="category-container" style="display: block; background-color: #d4edda; color: #155724; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; width: 50%; text-align: center; margin-bottom: 20px;">
     <i class="fa-solid fa-circle-check"></i> Операция выполнена успешно!
 </div>
 <%
-        session.removeAttribute("categorySuccess");
+        session.removeAttribute("successMessage");
     }
     else if (success != null && success == false) {
 %>
@@ -257,7 +354,7 @@
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'categoryListSection', 'addCategorySection',
-            'deleteCategorySection', 'usersListSection'];
+            'deleteCategorySection', 'usersListSection', 'addUserSection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -278,6 +375,7 @@
                 break;
             case 'account_add':
                 hideAllSections();
+                document.getElementById('addUserSection').style.display = 'block';
                 break;
             case 'account_delete':
                 hideAllSections();
@@ -341,22 +439,26 @@
 </div>
 
 <!-- секция "добавить категорию -->
-<div id="addCategorySection" class="category-container" style="background-color: white; padding: 25px; border-radius: 8px;width: 30%">
-    <h2 style="margin-bottom: 20px; color: Black; text-align: center">Добавить новую категорию</h2>
+<div id="addCategorySection" class="user-form-card category-container" style="display: none;">
+    <h2>Добавить категорию</h2>
 
     <form action="/admin/dashboard" method="POST">
         <input type="hidden" name="action" value="add_category">
 
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Название категории:</label>
-            <input type="text" name="categoryName" autocomplete="off" required placeholder="Название новой категории"
-                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                Название категории
+            </label>
+            <input type="text" name="categoryName" class="form-control" autocomplete="off"
+                   required placeholder="Введите название...">
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Родительская категория:</label>
-            <select name="parentId" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                <option value="">-- Новая категория --</option>
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                Родительская категория
+            </label>
+            <select name="parentId" class="form-control">
+                <option value="">-- Новая (корневая) --</option>
                 <%
                     ArrayList<Category> selectCategory = (ArrayList<Category>) session.getAttribute("categories");
                     if (selectCategory != null) {
@@ -372,35 +474,43 @@
             </select>
         </div>
 
-        <button type="submit" style="display: block; margin: 0 auto; background-color: #59a950; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            <i class="fa-solid fa-plus"></i> Добавить
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-plus"></i> Добавить категорию
         </button>
     </form>
 </div>
 
 <!-- секция "удалить категорию" -->
-<div id="deleteCategorySection" class="category-container" style="background-color: white; padding: 25px; border-radius: 8px;width: 30%">
-    <h2 style="margin-bottom: 20px; color: Black; text-align: center">Удаление категории</h2>
+<div id="deleteCategorySection" class="user-form-card category-container" style="display: none;">
+    <h2>Удаление категории</h2>
+
     <form action="/admin/dashboard" method="POST">
         <input type="hidden" name="action" value="delete_category">
 
-        <div style="margin-bottom: 20px;">
-            <select name="id" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                <option value="">-- Не выбрано --</option>
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                Выберите категорию для удаления
+            </label>
+            <select name="id" class="form-control" required>
+                <option value="" disabled selected>-- Не выбрано --</option>
                 <%
                     ArrayList<Category> categoryList = (ArrayList<Category>) session.getAttribute("categories");
                     if (categoryList != null) {
                         for (Category c : categoryList) {
                 %>
-                <option value="<%= c.getId() %>"><%= c.getId()%>    <%= c.getName() %></option>
+                <option value="<%= c.getId() %>"><%= c.getId() %> — <%= c.getName() %></option>
                 <%
                         }
                     }
                 %>
             </select>
+            <small style="display: block; margin-top: 10px; color: #a94442; font-size: 12px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Убедитесь, что в заданной категории нет товаров
+            </small>
         </div>
-        <button type="submit" style="display: block; margin: 0 auto; background-color: #59a950; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            <i class="fa-solid fa-ban"></i> Удалить
+
+        <button type="submit" class="btn-submit" style="background-color: #d9534f;">
+            <i class="fa-solid fa-ban"></i> Удалить категорию
         </button>
     </form>
 </div>
@@ -441,6 +551,45 @@
     <%
         }
     %>
+</div>
+
+<!-- секция "добавление пользователя"-->
+<div id="addUserSection" class="user-form-card category-container" style="display: none;">
+    <h2>Создание аккаунта</h2>
+    <form action="/admin/dashboard" method="POST">
+        <input type="hidden" name="action" value="add_user">
+
+        <div class="form-group">
+            <input type="text" name="name" class="form-control" autocomplete="off" required placeholder="Фамилия, Имя, Отчество">
+        </div>
+
+        <div class="form-group">
+            <input type="text" name="login" class="form-control" autocomplete="off" required placeholder="Логин">
+        </div>
+
+        <div class="form-group">
+            <input type="password" name="password" class="form-control" autocomplete="off" required placeholder="Пароль">
+        </div>
+
+        <div class="form-group">
+            <input type="password" name="confirm_password" class="form-control" autocomplete="off" required placeholder="Подтвердите пароль">
+        </div>
+
+        <div class="form-group">
+            <select name="role" class="form-control" required>
+                <option value="" disabled selected>Выберите роль</option>
+                <option value="администратор">Администратор</option>
+                <option value="кладовщик">Кладовщик</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-plus"></i> Создать аккаунт
+        </button>
+        <small style="display: block; margin-top: 10px; color: #337a2e; font-size: 12px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Убедитесь, что пароль записан
+        </small>
+    </form>
 </div>
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"

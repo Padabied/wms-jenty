@@ -3,6 +3,7 @@ package com.wmsjenty.servlet;
 import com.wmsjenty.model.Category;
 import com.wmsjenty.model.User;
 import com.wmsjenty.service.DBConnector;
+import com.wmsjenty.service.PasswordHasher;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -51,7 +52,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
             //Проверка на ячейки с пробелами
             if (name == null || name.trim().isEmpty()) {
-                request.getSession().setAttribute("categorySuccess", false);
+                request.getSession().setAttribute("successMessage", false);
                 response.sendRedirect("/admin/dashboard");
                 return;
             }
@@ -70,7 +71,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     pstmt.setInt(2, parentId);
                 }
                 pstmt.executeUpdate();
-                request.getSession().setAttribute("categorySuccess", true);
+                request.getSession().setAttribute("successMessage", true);
 
                 //внесение лога
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
@@ -84,7 +85,7 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             catch (SQLException e) {
                 e.printStackTrace();
-                request.getSession().setAttribute("categorySuccess", false);
+                request.getSession().setAttribute("successMessage", false);
             }
             response.sendRedirect("/admin/dashboard");
         }
@@ -103,7 +104,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 }
             }
             else {
-                request.getSession().setAttribute("categorySuccess", false);
+                request.getSession().setAttribute("successMessage", false);
                 response.sendRedirect("/admin/dashboard");
                 return;
             }
@@ -112,7 +113,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
                 pstmt.setInt(1, id);
                 pstmt.executeUpdate();
-                request.getSession().setAttribute("categorySuccess", true);
+                request.getSession().setAttribute("successMessage", true);
 
                 //внесение логов
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
@@ -126,7 +127,52 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             catch (SQLException e) {
                 e.printStackTrace();
-                request.getSession().setAttribute("categorySuccess", false);
+                request.getSession().setAttribute("successMessage", false);
+            }
+            response.sendRedirect("/admin/dashboard");
+        }
+        else if (action.equals("add_user")) {
+            String name = request.getParameter("name");
+            String login = request.getParameter("login");
+            String password = request.getParameter("password");
+            String confirmPassword = request.getParameter("confirm_password");
+            String role = request.getParameter("role");
+
+            //Проверки корректности
+            if (name == null || name.trim().isEmpty() ||
+            login == null || login.trim().isEmpty() ||
+            password == null || password.trim().isEmpty() ||
+            confirmPassword == null || confirmPassword.trim().isEmpty() ||
+            role == null || !password.equals(confirmPassword)) {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+            String hashedPassword = PasswordHasher.encode(password);
+            String sql = "INSERT INTO users (name, role, login, password) VALUES (?, ?, ?, ?)";
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, name);
+                pstmt.setString(2, role);
+                pstmt.setString(3, login);
+                pstmt.setString(4, hashedPassword);
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("successMessage", true);
+
+                //внесение логов
+                sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer userId = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "добавление аккаунта";
+                pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt (1, userId);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, login + ": " + name);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("successMessage", false);
             }
             response.sendRedirect("/admin/dashboard");
         }
