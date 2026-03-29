@@ -1,5 +1,6 @@
 <%@ page import="com.wmsjenty.model.Category" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="com.wmsjenty.model.User" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -19,7 +20,6 @@
             background-color: #f5f5f5;
         }
 
-        /* Основной контейнер навигации */
         .navbar {
             background: linear-gradient(135deg, #59a950 0%, #28521a 100%);
             padding: 0 30px;
@@ -30,14 +30,12 @@
             position: relative;
         }
 
-        /* Левая часть с кнопками */
         .nav-links {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
         }
 
-        /* Стили для кнопок */
         .nav-btn {
             background: transparent;
             color: white;
@@ -62,7 +60,6 @@
             display: inline-block;
         }
 
-        /* Содержимое выпадающего списка */
         .dropdown-content {
             display: none;
             position: absolute;
@@ -76,7 +73,6 @@
             animation: fadeIn 0.3s ease;
         }
 
-        /* Кнопки внутри выпадающего списка */
         .dropdown-content button {
             color: #333;
             padding: 12px 16px;
@@ -96,12 +92,11 @@
             color: #667eea;
         }
 
-        /* Показываем выпадающий список при наведении или активном состоянии */
+        /* выпадающий список при наведении */
         .dropdown:hover .dropdown-content {
             display: block;
         }
 
-        /* Правая часть с именем пользователя */
         .user-info {
             color: white;
             font-size: 16px;
@@ -127,18 +122,16 @@
             position: fixed;
             bottom: 40px;
             right: 40px;
-            width: 200px;        /* размер по желанию */
+            width: 200px;
             height: auto;
         }
 
-        /* Контейнер для всего списка */
         .category-container {
             margin: 20px auto;
             width: 80%;
-            display: none; /* По умолчанию скрыт */
+            display: none;
         }
 
-        /* Общий стиль для всех прямоугольников */
         .category-item {
             background-color: white;
             border: 1px solid #ddd;
@@ -150,11 +143,53 @@
             font-weight: 500;
         }
 
-        /* Отступ для подкатегорий (примерно 2 см) */
         .child-category {
             margin-left: 2cm;
             background-color: #f9f9f9;
-            border-left: 4px solid #59a950; /* Зеленая полоска слева для красоты */
+            border-left: 4px solid #59a950;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .user-table th {
+            background-color: #28521a;
+            color: white;
+            text-align: left;
+            padding: 12px 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .user-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .user-table tr:hover {
+            background-color: #f1f8f1;
+        }
+
+        .user-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .role-badge {
+            background-color: #59a950;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
         }
 
     </style>
@@ -192,21 +227,41 @@
         <button class="nav-btn" onclick="handleButtonClick('adjustment')"><i class="fa-solid fa-pencil"></i> Корректировка остатков</button>
     </div>
 
-    <!-- Правая часть с именем пользователя -->
     <div class="user-info">
         <i class="fa-regular fa-user"></i> ${empty sessionScope.userName ? "Гость" : sessionScope.userName}
     </div>
 </div>
 
+<%-- Проверка сообщения об успехе операции --%>
+<%
+    Boolean success = (Boolean) session.getAttribute("categorySuccess");
+    if (success != null && success) {
+%>
+<div id="successMessage" class="category-container" style="display: block; background-color: #d4edda; color: #155724; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; width: 50%; text-align: center; margin-bottom: 20px;">
+    <i class="fa-solid fa-circle-check"></i> Операция выполнена успешно!
+</div>
+<%
+        session.removeAttribute("categorySuccess");
+    }
+    else if (success != null && success == false) {
+%>
+<div id="successMessage" class="category-container" style="display: block; background-color: #f12323; color: #000000; padding: 20px; border-radius: 8px; border: 1px solid #2b4620; width: 50%; text-align: center; margin-bottom: 20px;">
+    <i class="fa-solid fa-circle-exclamation"></i> Операция не выполнена. Проверьте корректность введенных данных.
+</div>
+<%
+    session.removeAttribute("categorySuccess");
+    }
+%>
+
+
 <script>
     function hideAllSections() {
-        var categoryBlock = document.getElementById('categoryListSection');
-        if (categoryBlock) {
-            categoryBlock.style.display = 'none';
-        }
-
-        // Завтра сюда добавим скрытие других блоков (аккаунты, поиск и т.д.)
-        // document.getElementById('accountsSection').style.display = 'none';
+        var sections = ['successMessage', 'categoryListSection', 'addCategorySection',
+            'deleteCategorySection', 'usersListSection'];
+        sections.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
     }
 
     // Функция обработки нажатия на кнопки
@@ -229,20 +284,19 @@
                 break;
             case 'account_list':
                 hideAllSections();
+                document.getElementById('usersListSection').style.display = 'block';
                 break;
             case 'category_add':
                 hideAllSections();
+                document.getElementById('addCategorySection').style.display = 'block';
                 break;
             case 'category_delete':
                 hideAllSections();
+                document.getElementById('deleteCategorySection').style.display = 'block';
                 break;
             case 'category_list':
-                var block = document.getElementById('categoryListSection');
-                if (block.style.display === "block") {
-                    block.style.display = "none";
-                } else {
-                    block.style.display = "block";
-                }
+                hideAllSections();
+                document.getElementById('categoryListSection').style.display = 'block';
                 break;
             case 'adjustment':
                 hideAllSections();
@@ -254,6 +308,7 @@
 
 </script>
 
+<!-- Секция "список категорий" -->
 <div id="categoryListSection" class="category-container">
     <%
         ArrayList<Category> categories = (ArrayList<Category>) session.getAttribute("categories");
@@ -285,8 +340,112 @@
     %>
 </div>
 
+<!-- секция "добавить категорию -->
+<div id="addCategorySection" class="category-container" style="background-color: white; padding: 25px; border-radius: 8px;width: 30%">
+    <h2 style="margin-bottom: 20px; color: Black; text-align: center">Добавить новую категорию</h2>
+
+    <form action="/admin/dashboard" method="POST">
+        <input type="hidden" name="action" value="add_category">
+
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Название категории:</label>
+            <input type="text" name="categoryName" autocomplete="off" required placeholder="Название новой категории"
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Родительская категория:</label>
+            <select name="parentId" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">-- Новая категория --</option>
+                <%
+                    ArrayList<Category> selectCategory = (ArrayList<Category>) session.getAttribute("categories");
+                    if (selectCategory != null) {
+                        for (Category c : selectCategory) {
+                            if (c.getParentId() == null) {
+                %>
+                <option value="<%= c.getId() %>"><%= c.getName() %></option>
+                <%
+                            }
+                        }
+                    }
+                %>
+            </select>
+        </div>
+
+        <button type="submit" style="display: block; margin: 0 auto; background-color: #59a950; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            <i class="fa-solid fa-plus"></i> Добавить
+        </button>
+    </form>
+</div>
+
+<!-- секция "удалить категорию" -->
+<div id="deleteCategorySection" class="category-container" style="background-color: white; padding: 25px; border-radius: 8px;width: 30%">
+    <h2 style="margin-bottom: 20px; color: Black; text-align: center">Удаление категории</h2>
+    <form action="/admin/dashboard" method="POST">
+        <input type="hidden" name="action" value="delete_category">
+
+        <div style="margin-bottom: 20px;">
+            <select name="id" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">-- Не выбрано --</option>
+                <%
+                    ArrayList<Category> categoryList = (ArrayList<Category>) session.getAttribute("categories");
+                    if (categoryList != null) {
+                        for (Category c : categoryList) {
+                %>
+                <option value="<%= c.getId() %>"><%= c.getId()%>    <%= c.getName() %></option>
+                <%
+                        }
+                    }
+                %>
+            </select>
+        </div>
+        <button type="submit" style="display: block; margin: 0 auto; background-color: #59a950; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            <i class="fa-solid fa-ban"></i> Удалить
+        </button>
+    </form>
+</div>
+
+<!-- секция "список пользователей" -->
+<div id="usersListSection" class="category-container" style="width: 90%; margin-top: 30px;">
+    <h2 style="margin-bottom: 20px; color: #000000; text-align: center">Список пользователей системы</h2>
+
+    <%
+        ArrayList<User> users = (ArrayList<User>) session.getAttribute("userList");
+
+        if (users != null && !users.isEmpty()) {
+    %>
+    <table class="user-table">
+        <thead>
+        <tr>
+            <th style="width: 10%;">ID</th>
+            <th style="width: 40%;">ФИО / Имя</th>
+            <th style="width: 25%;">Роль</th>
+            <th style="width: 25%;">Логин</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% for (User user : users) { %>
+        <tr>
+            <td><strong>#<%= user.getId() %></strong></td>
+            <td><%= user.getName() %></td>
+            <td><span class="role-badge"><%= user.getRole() %></span></td>
+            <td style="font-family: monospace; color: #666;"><%= user.getLogin() %></td>
+        </tr>
+        <% } %>
+        </tbody>
+    </table>
+    <%
+    } else {
+    %>
+    <div class="category-item">Список пользователей пуст или еще не загружен.</div>
+    <%
+        }
+    %>
+</div>
+
 <img src="${pageContext.request.contextPath}/images/logo.svg"
      class="logo"
      alt="decorative">
+
 </body>
 </html>

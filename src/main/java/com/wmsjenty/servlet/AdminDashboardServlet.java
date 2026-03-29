@@ -31,9 +31,105 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         }
         List<Category> categories = loadAllCategories();
+        List<User> users = loadAllUsers();
         session.setAttribute("categories", categories);
         session.setAttribute("userName", user.getName());
+        session.setAttribute("userList", users);
+        session.setAttribute ("userId", user.getId());
         request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        String action = request.getParameter("action");
+        String sqlStatement;
+
+        if (action.equals("add_category")) {
+            String name = request.getParameter("categoryName");
+            String pIdString = request.getParameter("parentId");
+
+            //Проверка на ячейки с пробелами
+            if (name == null || name.trim().isEmpty()) {
+                request.getSession().setAttribute("categorySuccess", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+            Integer parentId = null;
+            if (pIdString != null && !pIdString.isEmpty()) {
+                parentId = Integer.parseInt(pIdString);
+            }
+
+            sqlStatement = "INSERT INTO category (name, parent_id) VALUES (?, ?)";
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setString(1, name);
+                if (parentId == null) pstmt.setNull(2, java.sql.Types.INTEGER);
+                else {
+                    pstmt.setInt(2, parentId);
+                }
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("categorySuccess", true);
+
+                //внесение лога
+                sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer id = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "добавление категории";
+                pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt (1, id);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, name);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("categorySuccess", false);
+            }
+            response.sendRedirect("/admin/dashboard");
+        }
+        else if (action.equals("delete_category")) {
+            String idString = request.getParameter("id");
+            Integer id;
+            String name = null;
+            if (idString != null && !idString.isEmpty()) {
+                id = Integer.parseInt(idString);
+                ArrayList<Category> categories = (ArrayList<Category>) request.getSession().getAttribute("categories");
+                for (Category c : categories) {
+                    if (c.getId() == id) {
+                        name = c.getName();
+                        break;
+                    }
+                }
+            }
+            else {
+                request.getSession().setAttribute("categorySuccess", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+            sqlStatement = "DELETE FROM category WHERE id IN (?)";
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt(1, id);
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("categorySuccess", true);
+
+                //внесение логов
+                sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer userId = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "удаление категории";
+                pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt (1, userId);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, name);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("categorySuccess", false);
+            }
+            response.sendRedirect("/admin/dashboard");
+        }
     }
 
     private List<Category> loadAllCategories() {
@@ -58,5 +154,26 @@ public class AdminDashboardServlet extends HttpServlet {
         }
 
         return categories;
+    }
+
+    private List<User> loadAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users";
+        try (Connection conn = DBConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String role = rs.getString("role");
+                String login = rs.getString("login");
+
+                users.add(new User(id, name, login, role));
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
     }
 }

@@ -2,7 +2,7 @@ package com.wmsjenty.service;
 import java.sql.*;
 
 public class DBConnector {
-    private static final String URL = "jdbc:mysql://localhost:3306/wms-jenty";
+    private static final String URL = "jdbc:mysql://localhost:3306/wms-jenty?useUnicode=true&characterEncoding=UTF-8";
     private static final String USERNAME = "admin";
     private static final String PASSWORD = "Hetfield123!";
 
