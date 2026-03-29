@@ -176,6 +176,57 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             response.sendRedirect("/admin/dashboard");
         }
+        else if (action.equals("delete_user")) {
+            String idString = request.getParameter("id");
+            Integer id;
+            String name = null;
+            boolean operationsExist = false;
+            if (idString != null && !idString.isEmpty()) {
+                id = Integer.parseInt(idString);
+                ArrayList<User> users = (ArrayList<User>) request.getSession().getAttribute("userList");
+                for (User user : users) {
+                    if (user.getId() == id) {
+                        name = user.getName();
+                        //проверка наличия операций в таблице operations_log
+                        operationsExist = hasUserOperations(id);
+                        break;
+                    }
+                }
+            }
+            else {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+            if (!operationsExist) {
+                sqlStatement = "DELETE FROM users WHERE id IN (?)";
+            }
+            else {
+                sqlStatement = "UPDATE users SET isActive = false WHERE id = ?";
+            }
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt(1, id);
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("successMessage", true);
+
+                //внесение логов
+                sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer userId = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "удаление аккаунта";
+                pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt (1, userId);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, name);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("successMessage", false);
+            }
+            response.sendRedirect("/admin/dashboard");
+        }
     }
 
     private List<Category> loadAllCategories() {
@@ -213,13 +264,31 @@ public class AdminDashboardServlet extends HttpServlet {
                 String name = rs.getString("name");
                 String role = rs.getString("role");
                 String login = rs.getString("login");
+                boolean isActive = rs.getBoolean("isActive");
 
-                users.add(new User(id, name, login, role));
+                users.add(new User(id, name, login, role, isActive));
             }
         }
         catch (SQLException e) {
             e.printStackTrace();
         }
         return users;
+    }
+
+    private boolean hasUserOperations(int id) {
+        String sqlStatement = "SELECT COUNT(*) FROM operations_log WHERE user_id = ?";
+        try (Connection conn = DBConnector.getConnection()) {
+            PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

@@ -354,7 +354,7 @@
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'categoryListSection', 'addCategorySection',
-            'deleteCategorySection', 'usersListSection', 'addUserSection'];
+            'deleteCategorySection', 'usersListSection', 'addUserSection', 'deleteUserSection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -379,6 +379,7 @@
                 break;
             case 'account_delete':
                 hideAllSections();
+                document.getElementById('deleteUserSection').style.display = 'block';
                 break;
             case 'account_list':
                 hideAllSections();
@@ -589,6 +590,39 @@
         <small style="display: block; margin-top: 10px; color: #337a2e; font-size: 12px;">
             <i class="fa-solid fa-triangle-exclamation"></i> Убедитесь, что пароль записан
         </small>
+    </form>
+</div>
+
+<!-- секция "удаление аккаунта -->
+<div id="deleteUserSection" class="user-form-card category-container" style="display: none;">
+    <h2>Удаление аккаунта</h2>
+    <form action="/admin/dashboard" method="POST">
+        <input type="hidden" name="action" value="delete_user">
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                Выберите аккаунт для удаления
+            </label>
+            <select name="id" class="form-control" required>
+                <option value="" disabled selected>-- Не выбрано --</option>
+                <%
+                    ArrayList<User> accountsList = (ArrayList<User>) session.getAttribute("userList");
+                    if (accountsList != null) {
+                        for (User user : accountsList) {
+                %>
+                <option value="<%= user.getId() %>"><%= user.getName() %></option>
+                <%
+                        }
+                    }
+                %>
+            </select>
+            <small style="display: block; margin-top: 10px; color: #a94442; font-size: 12px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Если выбранный пользователь выполнял операции, аккаунт будет деактивирован
+            </small>
+        </div>
+
+        <button type="submit" class="btn-submit" style="background-color: #d9534f;">
+            <i class="fa-solid fa-ban"></i> Удалить аккаунт
+        </button>
     </form>
 </div>
 

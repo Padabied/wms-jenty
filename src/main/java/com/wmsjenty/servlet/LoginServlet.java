@@ -56,10 +56,18 @@ public class LoginServlet extends HttpServlet {
                 String name = rs.getString("name");
                 String role = rs.getString("role");
                 String passwordHash = rs.getString("password");
+                boolean isActive = rs.getBoolean("isActive");
+
+                //проверка активности аккаунта
+                if (!isActive) {
+                    request.setAttribute("error", "Логин или пароль введены неверно");
+                    request.getRequestDispatcher("/login.jsp").forward(request, response);
+                    return;
+                }
 
                 if (PasswordHasher.encode(password).equals(passwordHash)) {
                     HttpSession session = request.getSession();
-                    User user = new User (id, name, login, role);
+                    User user = new User (id, name, login, role, true);
                     session.setAttribute("user", user);
                     switch (role){
                         case "администратор" : response.sendRedirect(request.getContextPath() + "/admin/dashboard");
