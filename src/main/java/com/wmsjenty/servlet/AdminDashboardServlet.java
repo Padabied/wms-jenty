@@ -1,6 +1,7 @@
 package com.wmsjenty.servlet;
 
 import com.wmsjenty.model.Category;
+import com.wmsjenty.model.Operation;
 import com.wmsjenty.model.User;
 import com.wmsjenty.service.DBConnector;
 import com.wmsjenty.service.PasswordHasher;
@@ -160,7 +161,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 pstmt.executeUpdate();
                 request.getSession().setAttribute("successMessage", true);
 
-                //внесение логов
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
                 Integer userId = (Integer) request.getSession().getAttribute("userId");
                 String operationType = "добавление аккаунта";
@@ -187,7 +187,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 for (User user : users) {
                     if (user.getId() == id) {
                         name = user.getName();
-                        //проверка наличия операций в таблице operations_log
                         operationsExist = hasUserOperations(id);
                         break;
                     }
@@ -222,6 +221,81 @@ public class AdminDashboardServlet extends HttpServlet {
                 pstmt.executeUpdate();
             }
             catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("successMessage", false);
+            }
+            response.sendRedirect("/admin/dashboard");
+        }
+        else if (action.equals("get_logs")) {
+            String startDateStr = request.getParameter("startDate");
+            String endDateStr = request.getParameter("endDate");
+            String filterUserId = request.getParameter("userId");
+            String opType = request.getParameter("operationType");
+            String sql = "SELECT * FROM operations_log\n" +
+                    "WHERE operation_date BETWEEN ? AND ?\n" +
+                    "  AND ( ? = '' OR user_id = ? )\n" +
+                    "  AND ( ? = '' OR operation_type = ? )\n" +
+                    "ORDER BY operation_date DESC";
+
+            java.time.LocalDate now = java.time.LocalDate.now();
+            java.time.LocalDateTime startDateTime;
+            java.time.LocalDateTime endDateTime;
+
+            try {
+                if ((startDateStr == null || startDateStr.isEmpty()) && (endDateStr == null || endDateStr.isEmpty())) {
+                    startDateTime = now.atStartOfDay();
+                    endDateTime = now.atTime(23, 59, 59);
+                } else if (endDateStr == null || endDateStr.isEmpty()) {
+                    startDateTime = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+                    endDateTime = now.atTime(23, 59, 59);
+
+                    if (startDateTime.toLocalDate().isAfter(now)) {
+                        request.getSession().setAttribute("successMessage", false);
+                        response.sendRedirect("/admin/dashboard");
+                        return;
+                    }
+                } else if (startDateStr == null || startDateStr.isEmpty()) {
+                    startDateTime = java.time.LocalDate.parse(endDateStr).atStartOfDay();
+                    endDateTime = java.time.LocalDate.parse(endDateStr).atTime(23, 59, 59);
+                } else {
+                    startDateTime = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+                    endDateTime = java.time.LocalDate.parse(endDateStr).atTime(23, 59, 59);
+                }
+
+                if (startDateTime.isAfter(endDateTime)) {
+                    request.getSession().setAttribute("successMessage", false);
+                    response.sendRedirect("/admin/dashboard");
+                    return;
+                }
+
+                try (Connection conn = DBConnector.getConnection()) {
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setTimestamp(1, java.sql.Timestamp.valueOf(startDateTime));
+                    pstmt.setTimestamp(2, java.sql.Timestamp.valueOf(endDateTime));
+
+                    pstmt.setObject(1, startDateTime);
+                    pstmt.setObject(2, endDateTime);
+                    pstmt.setString(3, filterUserId);
+                    pstmt.setInt(4, "".equals(filterUserId) ? 0 : Integer.parseInt(filterUserId));
+                    pstmt.setString(5, opType);
+                    pstmt.setString(6, opType);
+
+                    ResultSet rs = pstmt.executeQuery();
+                    ArrayList<Operation> logs = new ArrayList<>();
+
+                    while (rs.next()) {
+                        Operation op = new Operation();
+                        op.setOperationDate(rs.getTimestamp("operation_date").toString());
+                        op.setUserId(rs.getInt("user_id"));
+                        op.setOperationType(rs.getString("operation_type"));
+                        op.setDocumentId(rs.getInt("document_id"));
+                        op.setComment(rs.getString("comment"));
+                        logs.add(op);
+                    }
+                    request.getSession().setAttribute("logs", logs);
+                    request.getSession().removeAttribute("successMessage");
+                }
+            } catch (Exception e) {
                 e.printStackTrace();
                 request.getSession().setAttribute("successMessage", false);
             }

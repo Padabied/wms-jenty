@@ -1,6 +1,7 @@
 <%@ page import="com.wmsjenty.model.Category" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="com.wmsjenty.model.User" %>
+<%@ page import="com.wmsjenty.model.Operation" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -354,7 +355,8 @@
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'categoryListSection', 'addCategorySection',
-            'deleteCategorySection', 'usersListSection', 'addUserSection', 'deleteUserSection'];
+            'deleteCategorySection', 'usersListSection', 'addUserSection', 'deleteUserSection', 'logSelectSection',
+        'logResults', 'adjustmentSection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -363,8 +365,6 @@
 
     // Функция обработки нажатия на кнопки
     function handleButtonClick(action) {
-        console.log('Нажата кнопка:', action);
-
 
         switch(action) {
             case 'search':
@@ -372,6 +372,7 @@
                 break;
             case 'operations':
                 hideAllSections();
+                document.getElementById('logSelectSection').style.display = 'block';
                 break;
             case 'account_add':
                 hideAllSections();
@@ -399,6 +400,7 @@
                 break;
             case 'adjustment':
                 hideAllSections();
+                document.getElementById('adjustmentSection').style.display = 'block';
                 break;
             default:
                 alert('Действие: ' + action);
@@ -622,6 +624,134 @@
 
         <button type="submit" class="btn-submit" style="background-color: #d9534f;">
             <i class="fa-solid fa-ban"></i> Удалить аккаунт
+        </button>
+    </form>
+</div>
+
+<!-- секция "выбор операций для журнала" -->
+<div id="logSelectSection" class="user-form-card category-container" style="display: none;">
+    <h2>Журнал операций</h2>
+    <form action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
+        <input type="hidden" name="action" value="get_logs">
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #666;">Начальная дата</label>
+            <input type="date" name="startDate" class="form-control" onclick="this.showPicker()">
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #666;">Конечная дата</label>
+            <input type="date" name="endDate" class="form-control" onclick="this.showPicker()">
+        </div>
+
+
+        <div class="form-group">
+            <select name="userId" class="form-control">
+                <option value="">-- Все пользователи --</option>
+                <%
+                    ArrayList<User> logUsers = (ArrayList<User>) session.getAttribute("userList");
+                    if (logUsers != null) {
+                        for (User u : logUsers) {
+                %>
+                <option value="<%= u.getId() %>"><%= u.getName() %></option>
+                <%
+                        }
+                    }
+                %>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <select name="operationType" class="form-control">
+                <option value="">-- Все типы операций --</option>
+                <option value="приход">Приход</option>
+                <option value="расход">Расход</option>
+                <option value="добавление аккаунта">Добавление аккаунта</option>
+                <option value="удаление аккаунта">Удаление аккаунта</option>
+                <option value="добавление категории">Добавление категории</option>
+                <option value="удаление категории">Удаление категории</option>
+                <option value="корректировка остатков">Корректировка остатков</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-magnifying-glass"></i> Показать
+        </button>
+    </form>
+</div>
+
+<!-- секция "отображение журнала операций"-->
+<div id="logResults" class="category-container" style="width: 95%; margin-top: 30px;
+        display: <%= (session.getAttribute("logs") != null) ? "block" : "none" %>;">
+    <h2 style="margin-bottom: 20px; color: #333; text-align: center">Журнал операций</h2>
+
+    <%
+        ArrayList<Operation> logs = (ArrayList<Operation>) session.getAttribute("logs");
+        if (logs != null && !logs.isEmpty()) {
+    %>
+    <table class="user-table">
+        <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Пользователь</th>
+            <th>Операция</th>
+            <th>Номер документа</th>
+            <th>Комментарий</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% for (Operation op : logs) { %>
+        <tr>
+            <td style="white-space: nowrap;"><%= op.getOperationDate() %></td>
+            <td><%= (int) op.getUserId() %></td>
+            <td><span class="role-badge" style="background-color: #28521a;"><%= op.getOperationType() %></span></td>
+            <td><%= op.getDocumentId() %></td>
+            <td><%= op.getComment() != null ? op.getComment() : "" %></td>
+        </tr>
+        <% } %>
+        </tbody>
+    </table>
+    <%
+        session.removeAttribute("logs");
+    } else if (logs != null) {
+    %>
+    <div class="category-item">По заданным фильтрам операций не найдено</div>
+    <% } %>
+</div>
+
+<!-- секция "корректировка остатков" -->
+<div id="adjustmentSection" class="user-form-card category-container" style="display: none;">
+    <h2>Корректировка остатков</h2>
+
+    <form action="/admin/dashboard" method="POST">
+        <input type="hidden" name="action" value="adjustment">
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                ID товара на складе
+            </label>
+            <input type="text" name="itemId" class="form-control" autocomplete="off"
+                   required placeholder="Введите ID товара">
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                Новое значение остатка
+            </label>
+            <input type="text" name="value" class="form-control" autocomplete="off"
+                   required placeholder="Введите новое значение остатка">
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
+                Причина корректировки
+            </label>
+            <input type="text" name="value" class="form-control" autocomplete="off"
+                   required placeholder="Оставьте комментарий">
+        </div>
+
+        <button type="submit" class="btn-submit">
+            Корректировка
         </button>
     </form>
 </div>
