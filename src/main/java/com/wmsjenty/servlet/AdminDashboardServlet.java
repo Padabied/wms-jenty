@@ -32,12 +32,21 @@ public class AdminDashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+
+        String action = request.getParameter("action");
+        if ("getItemInfo".equals(action)) {
+            handleGetItemInfo(request, response);
+            request.getSession().removeAttribute("logs");
+            return;
+        }
+
         List<Category> categories = loadAllCategories();
         List<User> users = loadAllUsers();
         session.setAttribute("categories", categories);
         session.setAttribute("userName", user.getName());
         session.setAttribute("userList", users);
         session.setAttribute ("userId", user.getId());
+
         request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
     }
 
@@ -431,5 +440,30 @@ public class AdminDashboardServlet extends HttpServlet {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private void handleGetItemInfo(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String itemId = request.getParameter("itemId");
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try (Connection conn = DBConnector.getConnection()) {
+            String sql = "SELECT name, value FROM item WHERE id = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, Integer.parseInt(itemId));
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                // Экранируем кавычки в названии для JSON
+                String itemName = rs.getString("name").replace("\"", "\\\"");
+                int itemValue = rs.getInt("value");
+
+                response.getWriter().write("{\"name\":\"" + itemName + "\", \"value\":" + itemValue + "}");
+            } else {
+                response.getWriter().write("{\"error\":\"not_found\"}");
+            }
+        } catch (Exception e) {
+            response.getWriter().write("{\"error\":\"server_error\"}");
+        }
     }
 }

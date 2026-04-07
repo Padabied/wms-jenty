@@ -407,6 +407,46 @@
         }
     }
 
+    function showAdjustmentConfirm() {
+        const form = document.getElementById('adjustmentForm');
+        const itemId = form.itemId.value;
+        const newValue = form.value.value;
+
+        if (!itemId || !newValue) {
+            alert("Заполните ID товара и новое значение");
+            return;
+        }
+
+        document.getElementById('confirmModal').style.display = 'block';
+        document.getElementById('confirmItemId').innerText = itemId;
+        document.getElementById('confirmNewValue').innerText = newValue;
+        document.getElementById('confirmItemName').innerText = "Загрузка...";
+        document.getElementById('confirmOldValue').innerText = "...";
+
+        // Фоновый запрос к сервлету для получения данных о товаре
+        fetch('${pageContext.request.contextPath}/admin/dashboard?action=getItemInfo&itemId=' + itemId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('confirmItemName').innerText = "Товар не найден";
+                } else {
+                    document.getElementById('confirmItemName').innerText = data.name;
+                    document.getElementById('confirmOldValue').innerText = data.value;
+                }
+            })
+            .catch(err => {
+                document.getElementById('confirmItemName').innerText = "Ошибка загрузки";
+            });
+
+        document.getElementById('finalConfirmBtn').onclick = function() {
+            form.submit();
+        };
+    }
+
+    function closeModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+    }
+
 </script>
 
 <!-- Секция "список категорий" -->
@@ -726,7 +766,7 @@
 <div id="adjustmentSection" class="user-form-card category-container" style="display: none;">
     <h2>Корректировка остатков</h2>
 
-    <form action="/admin/dashboard" method="POST">
+    <form id="adjustmentForm" action="/admin/dashboard" method="POST">
         <input type="hidden" name="action" value="adjustment">
 
         <div class="form-group">
@@ -753,10 +793,26 @@
                    required placeholder="Оставьте комментарий">
         </div>
 
-        <button type="submit" class="btn-submit">
+        <button type="button" onclick="showAdjustmentConfirm()" class="btn-submit">
             Корректировка
         </button>
     </form>
+</div>
+
+<div id="confirmModal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(3px);">
+    <div class="user-form-card" style="position: relative; top: 50%; transform: translateY(-50%); max-width: 450px; margin: auto;">
+        <h2 style="color: #28521a;"><i class="fa-solid fa-circle-question"></i> Подтверждение</h2>
+        <div id="modalContent" style="margin-bottom: 25px; line-height: 1.6; font-size: 15px;">
+            <p><strong>Наименование:</strong> <span id="confirmItemName">Загрузка...</span></p>
+            <p><strong>ID товара:</strong> <span id="confirmItemId"></span></p>
+            <p><strong>Старое значение:</strong> <span id="confirmOldValue">...</span></p>
+            <p><strong>Новое значение:</strong> <span id="confirmNewValue" style="color: #d9534f; font-weight: bold;"></span></p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" id="finalConfirmBtn" class="btn-submit" style="flex: 1;">Подтвердить</button>
+            <button type="button" onclick="closeModal()" class="btn-submit" style="flex: 1; background-color: #666;">Отмена</button>
+        </div>
+    </div>
 </div>
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"
