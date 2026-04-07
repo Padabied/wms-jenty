@@ -856,6 +856,7 @@
     </form>
 </div>
 
+<!-- секция отображения результатов поиска товара на складе -->
 <div id="searchResultsSection" class="category-container" style="width: 95%; display: <%= (session.getAttribute("foundItems") != null) ? "block" : "none" %>;">
     <h2 style="text-align: center; margin-bottom: 20px;">Результаты поиска</h2>
     <table class="user-table">
