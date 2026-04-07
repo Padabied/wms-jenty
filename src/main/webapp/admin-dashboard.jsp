@@ -335,7 +335,7 @@
     Boolean success = (Boolean) session.getAttribute("successMessage");
     if (success != null && success) {
 %>
-<div id="successMessage" class="category-container" style="display: block; background-color: #d4edda; color: #155724; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; width: 50%; text-align: center; margin-bottom: 20px;">
+<div id="successMessage" class="category-container" style="display: block; background-color: #d4edda; color: #000000; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; width: 50%; text-align: center; margin-bottom: 20px;">
     <i class="fa-solid fa-circle-check"></i> Операция выполнена успешно!
 </div>
 <%
@@ -715,8 +715,11 @@
         session.removeAttribute("logs");
     } else if (logs != null) {
     %>
-    <div class="category-item">По заданным фильтрам операций не найдено</div>
-    <% } %>
+    <div style="text-align: center; margin: 40px auto; font-size: 20px;">
+        По заданным фильтрам операций не найдено
+    </div>
+    <%
+        } %>
 </div>
 
 <!-- секция "корректировка остатков" -->
@@ -746,7 +749,7 @@
             <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
                 Причина корректировки
             </label>
-            <input type="text" name="value" class="form-control" autocomplete="off"
+            <input type="text" name="comment" class="form-control" autocomplete="off"
                    required placeholder="Оставьте комментарий">
         </div>
 

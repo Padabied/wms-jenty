@@ -73,6 +73,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 }
                 pstmt.executeUpdate();
                 request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
 
                 //внесение лога
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
@@ -115,6 +116,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 pstmt.setInt(1, id);
                 pstmt.executeUpdate();
                 request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
 
                 //внесение логов
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
@@ -160,6 +162,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 pstmt.setString(4, hashedPassword);
                 pstmt.executeUpdate();
                 request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
 
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
                 Integer userId = (Integer) request.getSession().getAttribute("userId");
@@ -209,6 +212,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 pstmt.setInt(1, id);
                 pstmt.executeUpdate();
                 request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
 
                 //внесение логов
                 sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
@@ -299,6 +303,69 @@ public class AdminDashboardServlet extends HttpServlet {
                 e.printStackTrace();
                 request.getSession().setAttribute("successMessage", false);
             }
+            response.sendRedirect("/admin/dashboard");
+        }
+        else if (action.equals("adjustment")) {
+            String itemIdString = request.getParameter("itemId");
+            String newValueString = request.getParameter("value");
+            String comment = request.getParameter("comment");
+            Integer itemId;
+            Integer newValue;
+
+            if (itemIdString != null && !itemIdString.isEmpty() &&
+            newValueString != null && !newValueString.isEmpty()) {
+                itemId = Integer.parseInt(itemIdString);
+                newValue = Integer.parseInt(newValueString);
+                if (newValue < 0) {
+                    request.getSession().setAttribute("successMessage", false);
+                    response.sendRedirect("/admin/dashboard");
+                    return;
+                }
+            }
+            else {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+
+            String ifItemExistSql = "SELECT * FROM item WHERE id = ?";
+            String setNewItemValue = "UPDATE item SET value = ? WHERE id = ?";
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(ifItemExistSql);
+                pstmt.setInt(1, itemId);
+                ResultSet rs = pstmt.executeQuery();
+                if (!rs.next()) {
+                    request.getSession().setAttribute("successMessage", false);
+                    response.sendRedirect("/admin/dashboard");
+                    return;
+                }
+                String itemName = rs.getString("name");
+                String oldValue = String.valueOf(rs.getInt("value"));
+
+                pstmt = conn.prepareStatement(setNewItemValue);
+                pstmt.setInt(1, newValue);
+                pstmt.setInt(2, itemId);
+                pstmt.executeUpdate();
+
+                //внесение логов
+                sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer userId = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "корректировка остатков";
+                pstmt = conn.prepareStatement(sqlStatement);
+                comment = comment + "\n" + "Наименование: " + itemName + "\n" + "Старое значение: " +
+                        oldValue + "\n" + "Новое значение: " + newValueString;
+                pstmt.setInt (1, userId);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, comment);
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
+            }
+            catch (Exception e) {
+            e.printStackTrace();
+            request.getSession().setAttribute("successMessage", false);
+        }
             response.sendRedirect("/admin/dashboard");
         }
     }
