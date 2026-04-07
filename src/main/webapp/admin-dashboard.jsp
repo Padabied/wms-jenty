@@ -2,6 +2,7 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="com.wmsjenty.model.User" %>
 <%@ page import="com.wmsjenty.model.Operation" %>
+<%@ page import="com.wmsjenty.model.Item" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -356,7 +357,7 @@
     function hideAllSections() {
         var sections = ['successMessage', 'categoryListSection', 'addCategorySection',
             'deleteCategorySection', 'usersListSection', 'addUserSection', 'deleteUserSection', 'logSelectSection',
-        'logResults', 'adjustmentSection'];
+        'logResults', 'adjustmentSection', 'searchSection', 'searchResultsSection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -369,6 +370,7 @@
         switch(action) {
             case 'search':
                 hideAllSections();
+                document.getElementById('searchSection').style.display = 'block';
                 break;
             case 'operations':
                 hideAllSections();
@@ -799,6 +801,7 @@
     </form>
 </div>
 
+<!-- секция подтверждающего окна для функции корректировки остатков -->
 <div id="confirmModal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(3px);">
     <div class="user-form-card" style="position: relative; top: 50%; transform: translateY(-50%); max-width: 450px; margin: auto;">
         <h2 style="color: #28521a;"><i class="fa-solid fa-circle-question"></i> Подтверждение</h2>
@@ -813,6 +816,82 @@
             <button type="button" onclick="closeModal()" class="btn-submit" style="flex: 1; background-color: #666;">Отмена</button>
         </div>
     </div>
+</div>
+
+<!-- секция "поиск товара на складе -->
+<div id="searchSection" class="category-container" style="display: none; width: 95%; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <form action="${pageContext.request.contextPath}/admin/dashboard" method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <input type="hidden" name="action" value="search_items">
+
+        <div style="flex: 1; min-width: 200px;">
+            <label style="font-size: 12px; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">Категория</label>
+            <select name="searchCategory" class="form-control" style="margin-bottom: 0;">
+                <option value="">-- Все категории --</option>
+                <%
+                    ArrayList<Category> searchCategories = (ArrayList<Category>) session.getAttribute("categories");
+                    if (searchCategories != null) {
+                        for (Category c : searchCategories) {
+                %>
+                <option value="<%= c.getId() %>"><%= c.getName() %></option>
+                <%
+                        }
+                    }
+                %>
+            </select>
+        </div>
+
+        <div style="flex: 2; min-width: 250px;">
+            <label style="font-size: 12px; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">Наименование</label>
+            <input type="text" name="searchName" class="form-control" autocomplete="off" placeholder="Название или часть названия" style="margin-bottom: 0;">
+        </div>
+
+        <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 12px; color: #666; font-weight: bold; display: block; margin-bottom: 5px;">Артикул</label>
+            <input type="text" name="searchArticle" class="form-control" autocomplete="off" placeholder="Артикул" style="margin-bottom: 0;">
+        </div>
+
+        <button type="submit" class="btn-submit" style="width: auto; padding: 10px 30px; height: 43px;">
+            <i class="fa-solid fa-magnifying-glass"></i> Показать
+        </button>
+    </form>
+</div>
+
+<div id="searchResultsSection" class="category-container" style="width: 95%; display: <%= (session.getAttribute("foundItems") != null) ? "block" : "none" %>;">
+    <h2 style="text-align: center; margin-bottom: 20px;">Результаты поиска</h2>
+    <table class="user-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Категория</th>
+            <th>Артикул</th>
+            <th>Бренд</th>
+            <th>Наименование</th>
+            <th>Остаток</th>
+        </tr>
+        </thead>
+        <tbody>
+        <%
+            ArrayList<Item> items = (ArrayList<Item>) session.getAttribute("foundItems");
+            if (items != null && !items.isEmpty()) {
+                for (Item it : items) {
+        %>
+        <tr>
+            <td><strong>#<%= it.getId() %></strong></td>
+            <td><%= it.getCategoryName() %></td>
+            <td><%= it.getArticle() %></td>
+            <td><%= it.getBrand() %></td>
+            <td><%= it.getName() %></td>
+            <td style="font-weight: bold; color: #28521a;"><%= it.getValue() %></td>
+        </tr>
+        <%
+            }
+            session.removeAttribute("foundItems");
+        } else if (items != null) {
+        %>
+        <tr><td colspan="6" style="text-align: center;">Ничего не найдено</td></tr>
+        <% } %>
+        </tbody>
+    </table>
 </div>
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"
