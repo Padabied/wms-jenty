@@ -448,9 +448,9 @@
         <tr>
             <th>ID</th>
             <th>Категория</th>
+            <th>Наименование</th>
             <th>Артикул</th>
             <th>Бренд</th>
-            <th>Наименование</th>
             <th>Остаток</th>
         </tr>
         </thead>
@@ -463,9 +463,9 @@
         <tr>
             <td><strong>#<%= it.getId() %></strong></td>
             <td><%= it.getCategoryName() %></td>
+            <td><%= it.getName() %></td>
             <td><%= it.getArticle() %></td>
             <td><%= it.getBrand() %></td>
-            <td><%= it.getName() %></td>
             <td style="font-weight: bold; color: #28521a;"><%= it.getValue() %></td>
         </tr>
         <%

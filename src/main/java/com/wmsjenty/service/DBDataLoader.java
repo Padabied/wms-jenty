@@ -104,58 +104,87 @@ public class DBDataLoader {
         }
     }
 
-    public static void handleSearchItems (HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession();
-        User user = (User) session.getAttribute("user");
-        String categoryId = request.getParameter("searchCategory");
-        String namePart = request.getParameter("searchName");
-        String article = request.getParameter("searchArticle");
+public static void handleSearchItems(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    HttpSession session = request.getSession();
+    User user = (User) session.getAttribute("user");
 
-        ArrayList<Item> foundItems = new ArrayList<>();
+    String categoryId = request.getParameter("searchCategory");
+    String namePart = request.getParameter("searchName");
+    String article = request.getParameter("searchArticle");
+    ArrayList<Category> allCategories = (ArrayList<Category>) session.getAttribute("categories");
 
-        StringBuilder sql = new StringBuilder("SELECT * FROM item WHERE 1=1");
-        if (categoryId != null && !categoryId.isEmpty()) sql.append(" AND category_id = ?");
-        if (namePart != null && !namePart.isEmpty()) sql.append(" AND LOWER(name) LIKE LOWER(?)");
-        if (article != null && !article.isEmpty()) sql.append(" AND article = ?");
+    // сбор всех дочерних категорий + родительская
+    List<Integer> targetCategoryId = new ArrayList<>();
+    if (categoryId != null && !categoryId.isEmpty()) {
+        int selectedId = Integer.parseInt(categoryId);
+        targetCategoryId.add(selectedId);
 
-        try (Connection conn = DBConnector.getConnection()) {
-            PreparedStatement pstmt = conn.prepareStatement(sql.toString());
-            int paramIdx = 1;
-
-            if (categoryId != null && !categoryId.isEmpty()) pstmt.setInt(paramIdx++, Integer.parseInt(categoryId));
-            if (namePart != null && !namePart.isEmpty()) pstmt.setString(paramIdx++, "%" + namePart + "%");
-            if (article != null && !article.isEmpty()) pstmt.setString(paramIdx++, article);
-
-            ResultSet rs = pstmt.executeQuery();
-            ArrayList<Category> categories = (ArrayList<Category>) session.getAttribute("categories");
-            while (rs.next()) {
-                Item it = new Item();
-                it.setId(rs.getInt("id"));
-                it.setArticle(rs.getString("article"));
-                it.setBrand(rs.getString("brand"));
-                it.setName(rs.getString("name"));
-                it.setValue(rs.getInt("value"));
-
-                for (Category category : categories) {
-                    if (category.getId() == rs.getInt("category_id")) {
-                        it.setCategoryName(category.getName());
-                    }
+        if (allCategories != null) {
+            for (Category c : allCategories) {
+                if (c.getParentId() != null && c.getParentId() == selectedId) {
+                    targetCategoryId.add(c.getId());
                 }
-
-                foundItems.add(it);
             }
-            session.setAttribute("foundItems", foundItems);
-            if (user.getRole().equals("администратор")) {
-                request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
-            }
-            else if (user.getRole().equals("кладовщик")) {
-                request.getRequestDispatcher("/storekeeper-dashboard.jsp").forward(request, response);
-            }
-            return;
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
+
+    ArrayList<Item> foundItems = new ArrayList<>();
+    StringBuilder sql = new StringBuilder("SELECT * FROM item WHERE 1=1");
+
+    if (!targetCategoryId.isEmpty()) {
+        sql.append(" AND category_id IN (");
+        for (int i = 0; i < targetCategoryId.size(); i++) {
+            sql.append(i == 0 ? "?" : ",?");
+        }
+        sql.append(")");
+    }
+
+    if (namePart != null && !namePart.isEmpty()) sql.append(" AND LOWER(name) LIKE LOWER(?)");
+    if (article != null && !article.isEmpty()) sql.append(" AND article = ?");
+
+    try (Connection conn = DBConnector.getConnection()) {
+        PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+        int paramIdx = 1;
+
+        if (!targetCategoryId.isEmpty()) {
+            for (Integer id : targetCategoryId) {
+                pstmt.setInt(paramIdx++, id);
+            }
+        }
+
+        if (namePart != null && !namePart.isEmpty()) pstmt.setString(paramIdx++, "%" + namePart + "%");
+        if (article != null && !article.isEmpty()) pstmt.setString(paramIdx++, article);
+
+        ResultSet rs = pstmt.executeQuery();
+        while (rs.next()) {
+            Item it = new Item();
+            it.setId(rs.getInt("id"));
+            it.setArticle(rs.getString("article"));
+            it.setBrand(rs.getString("brand"));
+            it.setName(rs.getString("name"));
+            it.setValue(rs.getInt("value"));
+
+            if (allCategories != null) {
+                for (Category category : allCategories) {
+                    if (category.getId() == rs.getInt("category_id")) {
+                        it.setCategoryName(category.getName());
+                        break;
+                    }
+                }
+            }
+            foundItems.add(it);
+        }
+
+        session.setAttribute("foundItems", foundItems);
+
+        String path = user.getRole().equals("администратор") ? "/admin-dashboard.jsp" : "/storekeeper-dashboard.jsp";
+        request.getRequestDispatcher(path).forward(request, response);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+}
 
     public static String getUserId(Integer userId) {
         String sql = "SELECT * FROM users WHERE id = ?";
