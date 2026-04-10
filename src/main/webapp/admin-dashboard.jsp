@@ -673,7 +673,7 @@
 <!-- секция "выбор операций для журнала" -->
 <div id="logSelectSection" class="user-form-card category-container" style="display: none;">
     <h2>Журнал операций</h2>
-    <form action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
+    <form action="${pageContext.request.contextPath}/admin/dashboard" method="GET">
         <input type="hidden" name="action" value="get_logs">
 
         <div class="form-group">

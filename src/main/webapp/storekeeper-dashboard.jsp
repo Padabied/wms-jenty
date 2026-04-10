@@ -479,7 +479,75 @@
     </table>
 </div>
 
+<!-- секция "выбор операций для журнала" -->
+<div id="logSelectSection" class="user-form-card category-container" style="display: none;">
+    <h2>Журнал операций</h2>
+    <form action="${pageContext.request.contextPath}/storekeeper/dashboard" method="GET">
+        <input type="hidden" name="action" value="get_logs">
 
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #666;">Начальная дата</label>
+            <input type="date" name="startDate" class="form-control" onclick="this.showPicker()">
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #666;">Конечная дата</label>
+            <input type="date" name="endDate" class="form-control" onclick="this.showPicker()">
+        </div>
+
+        <div class="form-group">
+            <select name="operationType" class="form-control">
+                <option value="">-- Все типы операций --</option>
+                <option value="приход">Приход</option>
+                <option value="расход">Расход</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-magnifying-glass"></i> Показать
+        </button>
+    </form>
+</div>
+
+<!-- секция "отображение журнала операций"-->
+<div id="logResults" class="category-container" style="width: 95%; margin-top: 30px;
+        display: <%= (session.getAttribute("logs") != null) ? "block" : "none" %>;">
+    <h2 style="margin-bottom: 20px; color: #333; text-align: center">Журнал операций</h2>
+
+    <%
+        ArrayList<Operation> logs = (ArrayList<Operation>) session.getAttribute("logs");
+        if (logs != null && !logs.isEmpty()) {
+    %>
+    <table class="user-table">
+        <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Операция</th>
+            <th>Номер документа</th>
+            <th>Комментарий</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% for (Operation op : logs) { %>
+        <tr>
+            <td style="white-space: nowrap;"><%= op.getOperationDate() %></td>
+            <td><span class="role-badge" style="background-color: #28521a;"><%= op.getOperationType() %></span></td>
+            <td><%= op.getDocumentId() %></td>
+            <td><%= op.getComment() != null ? op.getComment() : "" %></td>
+        </tr>
+        <% } %>
+        </tbody>
+    </table>
+    <%
+        session.removeAttribute("logs");
+    } else if (logs != null) {
+    %>
+    <div style="text-align: center; margin: 40px auto; font-size: 20px;">
+        По заданным фильтрам операций не найдено
+    </div>
+    <%
+        } %>
+</div>
 
 
 
