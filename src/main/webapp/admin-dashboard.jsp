@@ -3,6 +3,7 @@
 <%@ page import="com.wmsjenty.model.User" %>
 <%@ page import="com.wmsjenty.model.Operation" %>
 <%@ page import="com.wmsjenty.model.Item" %>
+<%@ page import="com.wmsjenty.service.DBDataLoader" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -745,7 +746,7 @@
         <% for (Operation op : logs) { %>
         <tr>
             <td style="white-space: nowrap;"><%= op.getOperationDate() %></td>
-            <td><%= (int) op.getUserId() %></td>
+            <td><%= DBDataLoader.getUserId(op.getUserId()) %></td>
             <td><span class="role-badge" style="background-color: #28521a;"><%= op.getOperationType() %></span></td>
             <td><%= op.getDocumentId() %></td>
             <td><%= op.getComment() != null ? op.getComment() : "" %></td>
