@@ -8,6 +8,8 @@ public class Item {
     private Integer categoryId;
     private String categoryName;
     private Integer value;
+    private Integer recommendedValue;
+    private Integer minValue;
 
 
 
@@ -65,5 +67,21 @@ public class Item {
 
     public void setCategoryName(String categoryName) {
         this.categoryName = categoryName;
+    }
+
+    public Integer getRecommendedValue() {
+        return recommendedValue;
+    }
+
+    public void setRecommendedValue(Integer recommendedValue) {
+        this.recommendedValue = recommendedValue;
+    }
+
+    public Integer getMinValue() {
+        return minValue;
+    }
+
+    public void setMinValue(Integer minValue) {
+        this.minValue = minValue;
     }
 }

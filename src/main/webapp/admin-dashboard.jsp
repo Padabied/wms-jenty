@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <meta charset="UTF-8">
     <title>WMS-Jenty Admin</title>
+    <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/logo.svg">
     <style>
         * {
             margin: 0;

@@ -201,4 +201,55 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         }
         return null;
     }
+
+    public static ArrayList<Item> getForecast() {
+        ArrayList<Item> result = new ArrayList<>();
+        String sql = "SELECT * FROM item WHERE value <= min_value";
+
+        try (Connection conn = DBConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                Item item = new Item();
+                item.setId(rs.getInt("id"));
+                item.setName(rs.getString("name"));
+                item.setArticle(rs.getString("article"));
+                item.setBrand(rs.getString("brand"));
+                item.setValue(rs.getInt("value"));
+                item.setRecommendedValue(rs.getInt("recommended_value"));
+
+                result.add(item);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    public static ArrayList<Item> getInventoryList() {
+        ArrayList<Item> result = new ArrayList<>();
+        String sql = "SELECT * FROM item WHERE value > 0";
+
+        try (Connection conn = DBConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                Item item = new Item();
+                item.setId(rs.getInt("id"));
+                item.setName(rs.getString("name"));
+                item.setArticle(rs.getString("article"));
+                item.setBrand(rs.getString("brand"));
+                item.setValue(rs.getInt("value"));
+
+                result.add(item);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 }

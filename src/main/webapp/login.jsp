@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>WMS-Jenty: Авторизация</title>
+    <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/logo.svg">
     <style>
         body {
             margin: 0;

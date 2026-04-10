@@ -3,6 +3,7 @@
 <%@ page import="com.wmsjenty.model.User" %>
 <%@ page import="com.wmsjenty.model.Operation" %>
 <%@ page import="com.wmsjenty.model.Item" %>
+<%@ page import="com.wmsjenty.service.DBDataLoader" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -10,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <meta charset="UTF-8">
     <title>WMS-Jenty Storekeeper</title>
+    <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/logo.svg">
     <style>
         * {
             margin: 0;
@@ -56,7 +58,6 @@
             transform: translateY(-2px);
         }
 
-        /* Контейнер для выпадающего меню */
         .dropdown {
             position: relative;
             display: inline-block;
@@ -108,7 +109,6 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Анимация появления */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -240,7 +240,7 @@
             border-radius: 6px;
             font-size: 14px;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            box-sizing: border-box; /* Важно для правильного расчета ширины */
+            box-sizing: border-box;
         }
 
         .form-control:focus {
@@ -351,7 +351,7 @@
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'logSelectSection',
-            'logResults', 'searchSection', 'searchResultsSection'];
+            'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -399,8 +399,6 @@
         }
     }
 </script>
-
-
 
 <!-- секция "поиск товара на складе -->
 <div id="searchSection" class="category-container" style="display: none; width: 95%; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -549,7 +547,75 @@
         } %>
 </div>
 
+<!-- секция "прогнозирование закупок" -->
+<div id="forecastSection" class="category-container" style="width: 95%; display: none;">
+    <h2 style="text-align: center; margin-bottom: 20px;">Прогноз закупок</h2>
+    <table class="user-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Наименование</th>
+            <th>Артикул</th>
+            <th>Бренд</th>
+            <th>Количество к закупке</th>
+        </tr>
+        </thead>
+        <tbody>
+        <%
+            ArrayList<Item> forecastItems = DBDataLoader.getForecast();
+            if (!forecastItems.isEmpty()) {
+                for (Item it : forecastItems) {
+                    int quantityToBuy = it.getRecommendedValue() - it.getValue();
+        %>
+        <tr>
+            <td><%= it.getId() %></td>
+            <td><%= it.getName() %></td>
+            <td><%= it.getArticle() %></td>
+            <td><%= it.getBrand() %></td>
+            <td style="font-weight: bold; color: #000000;"><%= quantityToBuy %></td>
+        </tr>
+        <%
+            }
+        } else {
+        %>
+        <tr><td colspan="4" style="text-align: center;">Закупок не требуется</td></tr>
+        <% } %>
+        </tbody>
+    </table>
+</div>
 
+<!-- секция "инвенторизация" -->
+<div id="inventorySection" class="category-container" style="width: 95%; display: none;">
+    <h2 style="text-align: center; margin-bottom: 20px;">Текущий остаток</h2>
+    <table class="user-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Наименование</th>
+            <th>Артикул</th>
+            <th>Бренд</th>
+            <th>Количество</th>
+        </tr>
+        </thead>
+        <tbody>
+        <%
+            ArrayList<Item> inventoryList = DBDataLoader.getInventoryList();
+            if (!inventoryList.isEmpty()) {
+                for (Item it : inventoryList) {
+        %>
+        <tr>
+            <td><%= it.getId() %></td>
+            <td><%= it.getName() %></td>
+            <td><%= it.getArticle() %></td>
+            <td><%= it.getBrand() %></td>
+            <td style="font-weight: bold; color: #030303;"><%= it.getValue() %></td>
+        </tr>
+        <%
+            }
+        } %>
+        </tbody>
+    </table>
+</div>
 
 
 
