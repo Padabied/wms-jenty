@@ -12,16 +12,21 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "StorekeeperDashboardServlet", value = "/storekeeper/dashboard")
 public class StorekeeperDashboardServlet extends HttpServlet {
+
+    private HashMap<Item, Integer> outgoItems = new HashMap<>();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -118,6 +123,42 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             response.sendRedirect("/storekeeper/dashboard");
             return;
         }
+//        if ("check_item".equals(action)) {
+//            String itemArticle = request.getParameter("article");
+//            String itemValue = request.getParameter("value");
+//            Item outgoItem = DBDataLoader.checkItemAvailable(itemArticle, Integer.parseInt(itemValue));
+//
+//            if (outgoItem != null) {
+//                outgoItems.put(outgoItem, Integer.parseInt(itemValue));
+//                session.setAttribute("outgoItems", outgoItems);
+//                session.setAttribute("check_item_success", true);
+//            }
+//            else {
+//                session.setAttribute("check_item_success", false);
+//            }
+//        }
+        if ("check_item".equals(action)) {
+            String itemArticle = request.getParameter("article");
+            String itemValue = request.getParameter("value");
+
+            Map<Item, Integer> outgoItems = (Map<Item, Integer>) session.getAttribute("outgoItems");
+            if (outgoItems == null) {
+                outgoItems = new HashMap<>();
+            }
+
+            Item outgoItem = DBDataLoader.checkItemAvailable(itemArticle, Integer.parseInt(itemValue));
+
+            if (outgoItem != null) {
+                outgoItems.put(outgoItem, Integer.parseInt(itemValue));
+                session.setAttribute("outgoItems", outgoItems);
+                session.setAttribute("check_item_success", true);
+            } else {
+                session.setAttribute("check_item_success", false);
+            }
+
+            response.sendRedirect(request.getContextPath() + "/storekeeper/dashboard");
+            return;
+        }
 
         List<Category> categories = DBDataLoader.loadAllCategories();
         List<User> users = DBDataLoader.loadAllUsers();
@@ -134,4 +175,7 @@ public class StorekeeperDashboardServlet extends HttpServlet {
 
     }
 
+    public void clearOutgoItemsList() {
+        outgoItems.clear();
+    }
 }

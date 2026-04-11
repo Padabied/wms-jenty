@@ -4,6 +4,8 @@
 <%@ page import="com.wmsjenty.model.Operation" %>
 <%@ page import="com.wmsjenty.model.Item" %>
 <%@ page import="com.wmsjenty.service.DBDataLoader" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.HashMap" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -348,17 +350,121 @@
         }
     %>
 
+<!-- проверка добавления товара в расходную накладную -->
+<%
+    Boolean checkSuccess = (Boolean) session.getAttribute("check_item_success");
+    Map<Item, Integer> currentOutgoItems = (Map<Item, Integer>) session.getAttribute("outgoItems");
+
+    if (checkSuccess != null) {
+%>
+<script>
+    window.onload = function() {
+        hideAllSections();
+        document.getElementById('addOutgoSection').style.display = 'block';
+
+    };
+</script>
+<%
+        session.removeAttribute("check_item_success");
+    }
+%>
+
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'logSelectSection',
-            'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection'];
+            'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection',
+        'addOutgoSection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
     }
 
-    // Функция обработки нажатия на кнопки
+    function exportInventory() {
+        var table = document.querySelector('#inventorySection .user-table');
+        var rows = table.querySelectorAll('tbody tr');
+
+        var data = [];
+
+        var colWidths = {
+            id: 10,
+            name: 35,
+            article: 15,
+            brand: 15,
+            value: 11,
+            actual: 11
+        };
+
+        var today = new Date();
+        var dateForFilename = today.toISOString().slice(0, 10).replace(/-/g, '_');
+
+        // выравнивание текста добавлением пробелов
+        function padRight(str, length) {
+            if (!str) str = "";
+            if (str.length > length) {
+                return str.substring(0, length - 3) + "...";
+            }
+            return str + " ".repeat(length - str.length);
+        }
+
+        function makeSeparator() {
+            var line = "";
+            line += "+" + "-".repeat(colWidths.id) + "+";
+            line += "-".repeat(colWidths.name) + "+";
+            line += "-".repeat(colWidths.article) + "+";
+            line += "-".repeat(colWidths.brand) + "+";
+            line += "-".repeat(colWidths.value) + "+";
+            line += "-".repeat(colWidths.actual) + "+";
+            return line;
+        }
+
+        // Заголовки
+        data.push("Текущий остаток на складе");
+        data.push("Дата: " + new Date().toLocaleDateString('ru-RU'));
+        data.push("");
+        data.push(makeSeparator());
+
+        // Заголовки столбцов
+        var header = "|" + padRight("ID", colWidths.id) + "|";
+        header += padRight("Наименование", colWidths.name) + "|";
+        header += padRight("Артикул", colWidths.article) + "|";
+        header += padRight("Бренд", colWidths.brand) + "|";
+        header += padRight("Количество", colWidths.value) + "|";
+        header += padRight("Фактическое", colWidths.actual) + "|";
+        data.push(header);
+        data.push(makeSeparator());
+
+        // Данные
+        for (var i = 0; i < rows.length; i++) {
+            var cols = rows[i].querySelectorAll('td');
+            if (cols.length === 5) {
+                var line = "|" + padRight(cols[0].innerText, colWidths.id) + "|";
+                line += padRight(cols[1].innerText, colWidths.name) + "|";
+                line += padRight(cols[2].innerText, colWidths.article) + "|";
+                line += padRight(cols[3].innerText, colWidths.brand) + "|";
+                line += padRight(cols[4].innerText, colWidths.value) + "|";
+                line += padRight("", colWidths.actual) + "|";
+                data.push(line);
+            }
+        }
+
+        data.push(makeSeparator());
+        data.push("");
+        data.push("Всего позиций: " + rows.length);
+
+        // Создаем файл и скачиваем
+        var blob = new Blob([data.join("\n")], {type: "text/plain;charset=utf-8"});
+        var link = document.createElement("a");
+        var url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = "Остатки на " + dateForFilename + ".txt";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+
     function handleButtonClick(action) {
 
         switch(action) {
@@ -381,10 +487,6 @@
             case 'income':
                 hideAllSections();
                 document.getElementById('incomeSection').style.display = 'block';
-                break;
-            case 'category_add':
-                hideAllSections();
-                document.getElementById('addCategorySection').style.display = 'block';
                 break;
             case 'forecast':
                 hideAllSections();
@@ -587,6 +689,11 @@
 <!-- секция "инвенторизация" -->
 <div id="inventorySection" class="category-container" style="width: 95%; display: none;">
     <h2 style="text-align: center; margin-bottom: 20px;">Текущий остаток</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <button onclick="exportInventory()" class="btn-submit" style="width: auto; padding: 8px 20px;">
+            <i class="fa-solid fa-download"></i> Экспорт в TXT
+        </button>
+    </div>
     <table class="user-table">
         <thead>
         <tr>
@@ -617,7 +724,91 @@
     </table>
 </div>
 
+<!-- секция "оформление расхода" -->
+<div id="addOutgoSection" class="user-form-card category-container" style="display: none; width: 95%; max-width: 1200px;">
+    <h2 style="text-align: center; margin-bottom: 20px;">Оформление расхода</h2>
 
+    <div style="display: flex; gap: 30px;">
+        <div style="flex: 1;">
+            <form id="receiverForm">
+                <div class="form-group">
+                    <h2 style="margin-bottom: 10px; text-align: center;">Получатель</h2>
+                    <input type="text" name="receiverName" class="form-control" autocomplete="off"
+                           required placeholder="ФИО получателя">
+                    <input type="text" name="regNumber" class="form-control" autocomplete="off"
+                           required placeholder="Регистрационный номер авто" style="margin-top: 15px;">
+                </div>
+            </form>
+
+            <h2 style="margin-bottom: 10px; text-align: center;">Товар</h2>
+
+            <% if (checkSuccess != null && !checkSuccess) { %>
+            <div style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 6px; border: 1px solid #f5c6cb; margin-bottom: 15px; text-align: center; font-size: 14px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Товар не найден или недостаточно на складе
+            </div>
+            <% } %>
+
+            <form id="itemForm" action="/storekeeper/dashboard" method="GET" style="margin-top: 20px;">
+                <input type="hidden" name="action" value="check_item">
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <input type="text" id="article" name="article" class="form-control" required placeholder="Артикул" autocomplete="off">
+                    </div>
+                    <div>
+                        <input type="number" id="value" name = "value" class="form-control" required placeholder="Количество" min="1" autocomplete="off">
+                    </div>
+                    <div style="text-align: center;">
+                        <button type="submit" class="btn-submit" style="display: block; margin: 0 auto; width: 50%; padding: 12px 25px;">
+                            <i class="fa-solid fa-plus"></i> Добавить
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div style="flex: 1.5;">
+            <h2 style="margin-bottom: 10px; text-align: center;">Добавленные товары:</h2>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table class="user-table" id="itemsTable" style="width: 100%;">
+                    <thead>
+                    <tr>
+                        <th>Артикул</th>
+                        <th>Наименование</th>
+                        <th>Количество</th>
+                    </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                    <%
+                        if (currentOutgoItems == null || currentOutgoItems.isEmpty()) {
+                    %>
+                    <tr><td colspan="3" style="text-align: center;">Товары не добавлены</td></tr>
+                    <%
+                    } else {
+                        for (Map.Entry<Item, Integer> entry : currentOutgoItems.entrySet()) {
+                            Item it = entry.getKey();
+                            Integer val = entry.getValue();
+                    %>
+                    <tr>
+                        <td><%= it.getArticle() %></td>
+                        <td><%= it.getName() %></td>
+                        <td><%= val %></td>
+                    </tr>
+                    <%
+                            }
+                        }
+                    %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <button type="button" onclick="submitOutgo()" class="btn-submit" style="background-color: #28521a; width: 100%">
+            <i class="fa-solid fa-check"></i> Оформить расход
+        </button>
+    </div>
+</div>
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"
      class="logo"

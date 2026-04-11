@@ -252,4 +252,29 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         }
         return result;
     }
+
+    public static Item checkItemAvailable(String article, Integer value) {
+        String sql = "SELECT * FROM item WHERE article = ? AND value >= ?";
+
+        try (Connection conn = DBConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, article);
+            pstmt.setInt(2, value);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Item item = new Item();
+                    item.setId(rs.getInt("id"));
+                    item.setArticle(rs.getString("article"));
+                    item.setName(rs.getString("name"));
+                    item.setValue(rs.getInt("value"));
+                    return item;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
