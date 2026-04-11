@@ -123,41 +123,47 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             response.sendRedirect("/storekeeper/dashboard");
             return;
         }
-//        if ("check_item".equals(action)) {
-//            String itemArticle = request.getParameter("article");
-//            String itemValue = request.getParameter("value");
-//            Item outgoItem = DBDataLoader.checkItemAvailable(itemArticle, Integer.parseInt(itemValue));
-//
-//            if (outgoItem != null) {
-//                outgoItems.put(outgoItem, Integer.parseInt(itemValue));
-//                session.setAttribute("outgoItems", outgoItems);
-//                session.setAttribute("check_item_success", true);
-//            }
-//            else {
-//                session.setAttribute("check_item_success", false);
-//            }
-//        }
         if ("check_item".equals(action)) {
             String itemArticle = request.getParameter("article");
             String itemValue = request.getParameter("value");
 
-            Map<Item, Integer> outgoItems = (Map<Item, Integer>) session.getAttribute("outgoItems");
-            if (outgoItems == null) {
-                outgoItems = new HashMap<>();
+            int quantity = (itemValue != null && !itemValue.isEmpty()) ? Integer.parseInt(itemValue) : 0;
+
+            if (quantity <= 0) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write("{\"status\":\"error\", \"message\":\"Недопустимое количество\"}");
+                return;
             }
 
-            Item outgoItem = DBDataLoader.checkItemAvailable(itemArticle, Integer.parseInt(itemValue));
+            Item outgoItem = DBDataLoader.checkItemAvailable(itemArticle, quantity);
+
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
 
             if (outgoItem != null) {
-                outgoItems.put(outgoItem, Integer.parseInt(itemValue));
+                outgoItems.put(outgoItem, quantity);
                 session.setAttribute("outgoItems", outgoItems);
-                session.setAttribute("check_item_success", true);
-            } else {
-                session.setAttribute("check_item_success", false);
-            }
 
-            response.sendRedirect(request.getContextPath() + "/storekeeper/dashboard");
+                String json = "{\"status\":\"success\", \"article\":\"" + outgoItem.getArticle() +
+                        "\", \"name\":\"" + outgoItem.getName() +
+                        "\", \"value\":" + quantity + "}";
+                response.getWriter().write(json);
+            }
+            else {
+                response.getWriter().write("{\"status\":\"error\", \"message\":\"Товар не найден или недостаточно на складе\"}");
+            }
             return;
+        }
+        if ("clear_outgo".equals(action)) {
+            clearOutgoItemsList();
+            session.removeAttribute("outgoItems");
+            session.removeAttribute("check_item_success");
+
+            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                response.setStatus(200);
+                return;
+            }
         }
 
         List<Category> categories = DBDataLoader.loadAllCategories();
@@ -172,7 +178,43 @@ public class StorekeeperDashboardServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        HttpSession session = request.getSession();
+        String action = request.getParameter("action");
+        if ("confirm_outgo".equals(action)) {
+            String receiver = request.getParameter("receiverName");
+            String regNum = request.getParameter("regNumber");
 
+            User user = (User) session.getAttribute("user");
+
+            if (user != null && outgoItems != null && !outgoItems.isEmpty()) {
+                int documentId = DBDataLoader.saveFullInvoice(receiver, regNum, user.getId(), outgoItems);
+
+                if (documentId > 0) {
+                    clearOutgoItemsList();
+                    session.setAttribute("outgo_status", "success");
+                    session.setAttribute("successMessage", true);
+                    //внесение лога
+                    try (Connection conn = DBConnector.getConnection()) {
+                        String sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, document_id) VALUES (NOW(), ?, ?, ?)";
+                        PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                        int id = user.getId();
+                        String operationType = "расход";
+                        pstmt.setInt(1, id);
+                        pstmt.setString(2, operationType);
+                        pstmt.setInt(3, documentId);
+                        pstmt.executeUpdate();
+                    }
+                    catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    session.setAttribute("outgo_status", "error");
+                }
+            }
+            response.sendRedirect(request.getContextPath() + "/storekeeper/dashboard");
+        }
     }
 
     public void clearOutgoItemsList() {

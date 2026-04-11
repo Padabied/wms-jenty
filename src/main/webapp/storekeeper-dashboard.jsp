@@ -452,7 +452,6 @@
         data.push("");
         data.push("Всего позиций: " + rows.length);
 
-        // Создаем файл и скачиваем
         var blob = new Blob([data.join("\n")], {type: "text/plain;charset=utf-8"});
         var link = document.createElement("a");
         var url = URL.createObjectURL(blob);
@@ -464,36 +463,157 @@
         URL.revokeObjectURL(url);
     }
 
+<!-- добавление товара в список в расходной накладной -->
+    function addItem() {
+        var article = document.getElementById('article').value.trim(); // trim уберет лишние пробелы
+        var value = document.getElementById('value').value;
+        var errorDiv = document.getElementById('itemError');
+
+        if (!article || !value || parseInt(value) <= 0) {
+            errorDiv.innerText = "Введите положительное число";
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (!article || !value) {
+            alert("Заполните все поля");
+            return;
+        }
+
+        var tbody = document.getElementById('itemsBody');
+        var rows = Array.from(tbody.rows);
+
+        var isAlreadyAdded = rows.some(function(row) {
+            return row.cells[0] && row.cells[0].innerText === article;
+        });
+
+        if (isAlreadyAdded) {
+            errorDiv.innerText = "Этот товар уже добавлен";
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        var url = "/storekeeper/dashboard?action=check_item&article=" + encodeURIComponent(article) + "&value=" + encodeURIComponent(value);
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.status === "success") {
+                    errorDiv.style.display = 'none';
+                    updateTableBody(data);
+                    document.getElementById('article').value = '';
+                    document.getElementById('value').value = '';
+                } else {
+                    errorDiv.innerText = data.message;
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(function(err) {
+                console.error(err);
+                alert("Ошибка связи с сервером");
+            });
+    }
+
+    <!-- обновление списка добавленных товаров в расходной накладной -->
+    function updateTableBody(item) {
+        var tbody = document.getElementById('itemsBody');
+
+        if (tbody.rows.length === 1 && tbody.rows[0].cells.length < 3) {
+            tbody.innerHTML = '';
+        }
+
+        var row = tbody.insertRow();
+        row.innerHTML = '<td>' + item.article + '</td>' +
+            '<td>' + item.name + '</td>' +
+            '<td>' + item.value + '</td>';
+    }
+
+    <!-- очистка формы и внутреннего списка сервлета после закрытия формы расхода-->
+    function clearOutgoData() {
+        var tbody = document.getElementById('itemsBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Товары не добавлены</td></tr>';
+        }
+
+        var itemForm = document.getElementById('itemForm');
+        if (itemForm) {
+            itemForm.reset();
+        }
+        var receiverForm = document.getElementById('receiverForm');
+        if (receiverForm) {
+            receiverForm.reset();
+        }
+
+        var errorDiv = document.getElementById('itemError');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+
+        fetch('/storekeeper/dashboard?action=clear_outgo', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).catch(err => console.error('Ошибка при очистке списка на сервере:', err));
+    }
+
+    <!-- отправка данных для оформления расхода -->
+    function submitOutgo() {
+        const receiver = document.getElementsByName('receiverName')[0].value.trim();
+        const regNum = document.getElementsByName('regNumber')[0].value.trim();
+
+        if (!receiver || !regNum) {
+            alert("Заполните данные");
+            return;
+        }
+
+        //динамическое создание формы для отправки на сервлет
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/storekeeper/dashboard';
+
+        const params = {
+            'action': 'confirm_outgo',
+            'receiverName': receiver,
+            'regNumber': regNum
+        };
+
+        for (let key in params) {
+            let input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = params[key];
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
 
     function handleButtonClick(action) {
 
+        hideAllSections();
+        if (action !== 'outgo_add') {
+            clearOutgoData();
+        }
+
         switch(action) {
             case 'search':
-                hideAllSections();
                 document.getElementById('searchSection').style.display = 'block';
                 break;
             case 'operations':
-                hideAllSections();
                 document.getElementById('logSelectSection').style.display = 'block';
                 break;
             case 'outgo_add':
-                hideAllSections();
                 document.getElementById('addOutgoSection').style.display = 'block';
                 break;
             case 'outgo_log':
-                hideAllSections();
                 document.getElementById('outgoLogSection').style.display = 'block';
                 break;
             case 'income':
-                hideAllSections();
                 document.getElementById('incomeSection').style.display = 'block';
                 break;
             case 'forecast':
-                hideAllSections();
                 document.getElementById('forecastSection').style.display = 'block';
                 break;
             case 'inventory':
-                hideAllSections();
                 document.getElementById('inventorySection').style.display = 'block';
                 break;
             default:
@@ -741,24 +861,19 @@
             </form>
 
             <h2 style="margin-bottom: 10px; text-align: center;">Товар</h2>
-
-            <% if (checkSuccess != null && !checkSuccess) { %>
-            <div style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 6px; border: 1px solid #f5c6cb; margin-bottom: 15px; text-align: center; font-size: 14px;">
-                <i class="fa-solid fa-triangle-exclamation"></i> Товар не найден или недостаточно на складе
-            </div>
-            <% } %>
-
-            <form id="itemForm" action="/storekeeper/dashboard" method="GET" style="margin-top: 20px;">
+            <form id="itemForm" style="margin-top: 20px;">
                 <input type="hidden" name="action" value="check_item">
                 <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div id="itemError" style="display: none; color: #721c24; background: #f8d7da; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center;"></div>
+
                     <div>
-                        <input type="text" id="article" name="article" class="form-control" required placeholder="Артикул" autocomplete="off">
+                        <input type="text" id="article" name="article" class="form-control" required placeholder="Артикул">
                     </div>
                     <div>
-                        <input type="number" id="value" name = "value" class="form-control" required placeholder="Количество" min="1" autocomplete="off">
+                        <input type="number" id="value" name="value" class="form-control" required placeholder="Количество" min="1">
                     </div>
                     <div style="text-align: center;">
-                        <button type="submit" class="btn-submit" style="display: block; margin: 0 auto; width: 50%; padding: 12px 25px;">
+                        <button type="button" onclick="addItem()" class="btn-submit" style="display: block; margin: 0 auto; width: 50%; padding: 12px 25px;">
                             <i class="fa-solid fa-plus"></i> Добавить
                         </button>
                     </div>

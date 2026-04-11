@@ -8,12 +8,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DBDataLoader {
 
@@ -276,5 +275,70 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
             e.printStackTrace();
         }
         return null;
+    }
+
+    // создание записей в outgoing_invoices, outgoing_items, уменьшение количества товаров в item
+    // возвращает document_id в случае успеха и -1 в случае ошибки
+    public static int saveFullInvoice(String receiver, String regNum, int userId, HashMap<Item, Integer> items) {
+        Connection conn = null;
+        int generatedId = -1;
+
+        try {
+            conn =DBConnector.getConnection();
+            conn.setAutoCommit(false);
+
+            // создание записи в outgoing_invoices
+            String sqlInvoice = "INSERT INTO outgoing_invoices (receiver_name, truck_reg_number, outgo_date, outgo_creator_id) VALUES (?, ?, NOW(), ?)";
+            PreparedStatement psInvoice = conn.prepareStatement(sqlInvoice, Statement.RETURN_GENERATED_KEYS);
+            psInvoice.setString(1, receiver);
+            psInvoice.setString(2, regNum);
+            psInvoice.setInt(3, userId);
+            psInvoice.executeUpdate();
+
+            // получение сгенерированного ID накладной
+            int invoiceId = -1;
+            ResultSet rs = psInvoice.getGeneratedKeys();
+            if (rs.next()) {
+                invoiceId = rs.getInt(1);
+                generatedId = rs.getInt(1);
+            }
+
+            // добавление товаров в outgoing_items и уменьшение значения на складе
+            String sqlItems = "INSERT INTO outgoing_items (outgo_invoice_id, outgo_item_id, value) VALUES (?, ?, ?)";
+            String sqlUpdateStock = "UPDATE item SET value = value - ? WHERE id = ?";
+
+            PreparedStatement psItems = conn.prepareStatement(sqlItems);
+            PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateStock);
+
+            for (Map.Entry<Item, Integer> entry : items.entrySet()) {
+                Item item = entry.getKey();
+                int qty = entry.getValue();
+
+                // запись в outgoing_items
+                psItems.setInt(1, invoiceId);
+                psItems.setInt(2, item.getId());
+                psItems.setInt(3, qty);
+                psItems.addBatch();
+
+                // корректирование остатков в таблице item
+                psUpdate.setInt(1, qty);
+                psUpdate.setInt(2, item.getId());
+                psUpdate.addBatch();
+            }
+
+            psItems.executeBatch();
+            psUpdate.executeBatch();
+
+            conn.commit();
+            return generatedId;
+
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); }
+                catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            e.printStackTrace();
+            return -1;
+        }
     }
 }
