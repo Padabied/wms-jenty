@@ -780,6 +780,7 @@
         По заданным фильтрам операций не найдено
     </div>
     <%
+            session.removeAttribute("logs");
         } %>
 </div>
 
