@@ -58,7 +58,6 @@
             transform: translateY(-2px);
         }
 
-        /* Контейнер для выпадающего меню */
         .dropdown {
             position: relative;
             display: inline-block;

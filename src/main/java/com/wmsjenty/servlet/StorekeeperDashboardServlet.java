@@ -1,9 +1,6 @@
 package com.wmsjenty.servlet;
 
-import com.wmsjenty.model.Category;
-import com.wmsjenty.model.Item;
-import com.wmsjenty.model.Operation;
-import com.wmsjenty.model.User;
+import com.wmsjenty.model.*;
 import com.wmsjenty.service.DBConnector;
 import com.wmsjenty.service.DBDataLoader;
 import com.wmsjenty.service.PasswordHasher;
@@ -164,6 +161,21 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                 response.setStatus(200);
                 return;
             }
+        }
+        if ("outgo_log".equals(action)) {
+            String regNumber = request.getParameter("regNumber");
+            HashMap<String, ArrayList<OutgoItem>> outgoDateAndItems = DBDataLoader.getOutgoInvoicesByRegNumber(regNumber);
+//            if (!outgoDateAndItems.isEmpty()) {
+//                session.setAttribute("outgoLogs", outgoDateAndItems);
+//            }
+//            else {
+//                request.getSession().setAttribute("successMessage", false);
+//                response.sendRedirect("/storekeeper/dashboard");
+//                return;
+//            }
+            session.setAttribute("outgoLogs", outgoDateAndItems);
+            response.sendRedirect("/storekeeper/dashboard");
+            return;
         }
 
         List<Category> categories = DBDataLoader.loadAllCategories();

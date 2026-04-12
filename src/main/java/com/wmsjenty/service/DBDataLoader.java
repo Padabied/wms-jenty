@@ -2,6 +2,7 @@ package com.wmsjenty.service;
 
 import com.wmsjenty.model.Category;
 import com.wmsjenty.model.Item;
+import com.wmsjenty.model.OutgoItem;
 import com.wmsjenty.model.User;
 
 import javax.servlet.http.HttpServletRequest;
@@ -341,4 +342,41 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
             return -1;
         }
     }
-}
+
+    public static HashMap<String, ArrayList<OutgoItem>> getOutgoInvoicesByRegNumber(String regNumber) {
+        HashMap<String, ArrayList<OutgoItem>> result = new HashMap<>();
+        String getOutgoInvoices = "SELECT * FROM outgoing_invoices WHERE truck_reg_number = ?";
+        String getOutgoItems = "SELECT * FROM outgoing_items WHERE outgo_invoice_id = ?";
+        String getItemName = "SELECT * FROM item WHERE id = ?";
+        try (Connection conn = DBConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(getOutgoInvoices)) {
+            pstmt.setString(1, regNumber);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String outgoDate = rs.getString("outgo_date");
+                ArrayList<OutgoItem> items = new ArrayList<>();
+                PreparedStatement stmtToGetItems = conn.prepareStatement(getOutgoItems);
+                stmtToGetItems.setInt(1, rs.getInt("id"));
+                ResultSet outgoingItemsSet = stmtToGetItems.executeQuery();
+                while (outgoingItemsSet.next()) {
+                    OutgoItem itemToList = new OutgoItem();
+                    itemToList.setId(outgoingItemsSet.getInt("outgo_item_id"));
+                    itemToList.setValueForOutgo(outgoingItemsSet.getInt("value"));
+                    PreparedStatement stmtToGetItemName = conn.prepareStatement(getItemName);
+                    stmtToGetItemName.setInt(1, outgoingItemsSet.getInt("outgo_item_id"));
+                    ResultSet itemNames = stmtToGetItemName.executeQuery();
+                    while (itemNames.next()) {
+                        itemToList.setName(itemNames.getString("name"));
+                    }
+                    items.add(itemToList);
+                }
+                result.put(outgoDate, items);
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+        }
+    }
+

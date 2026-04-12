@@ -1,11 +1,8 @@
-<%@ page import="com.wmsjenty.model.Category" %>
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="com.wmsjenty.model.User" %>
-<%@ page import="com.wmsjenty.model.Operation" %>
-<%@ page import="com.wmsjenty.model.Item" %>
 <%@ page import="com.wmsjenty.service.DBDataLoader" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.HashMap" %>
+<%@ page import="com.wmsjenty.model.*" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -369,11 +366,28 @@
     }
 %>
 
+<!-- проверка запроса предоставления истории выдачи товара -->
+<%
+    HashMap<String, ArrayList<OutgoItem>> logsForRender = (HashMap<String, ArrayList<OutgoItem>>) session.getAttribute("outgoLogs");
+    if (logsForRender != null) {
+%>
+<script>
+    window.onload = function() {
+        hideAllSections();
+        document.getElementById('outgoLogResults').style.display = 'block';
+    };
+</script>
+<%
+        session.removeAttribute("outgoLogs");
+        request.setAttribute("currentOutgoLogs", logsForRender);
+    }
+%>
+
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'logSelectSection',
             'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection',
-        'addOutgoSection'];
+        'addOutgoSection', 'outgoLogSelect', 'outgoLogResults'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -605,7 +619,7 @@
                 document.getElementById('addOutgoSection').style.display = 'block';
                 break;
             case 'outgo_log':
-                document.getElementById('outgoLogSection').style.display = 'block';
+                document.getElementById('outgoLogSelect').style.display = 'block';
                 break;
             case 'income':
                 document.getElementById('incomeSection').style.display = 'block';
@@ -923,6 +937,69 @@
             <i class="fa-solid fa-check"></i> Оформить расход
         </button>
     </div>
+</div>
+
+<!-- секция выбора автомобиля для просмотра истории выдачи товаров -->
+<div id="outgoLogSelect" class="user-form-card category-container" style="display: none;">
+    <h2>История выдачи</h2>
+    <form action="${pageContext.request.contextPath}/storekeeper/dashboard" method="GET">
+        <input type="hidden" name="action" value="outgo_log">
+
+        <div class="form-group">
+            <input type="text" name="regNumber" autocomplete="off" class="form-control" placeholder="Регистрационный номер автомобиля">
+        </div>
+
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-magnifying-glass"></i> Показать
+        </button>
+    </form>
+</div>
+
+<!-- секция отображения выдачи товара -->
+<div id="outgoLogResults" class="category-container" style="display: none;">
+    <h2 style="text-align: center; margin-bottom: 20px; color: #333;">Журнал выдачи</h2>
+
+    <%
+        HashMap<String, ArrayList<OutgoItem>> outgoLogs = (HashMap<String, ArrayList<OutgoItem>>) request.getAttribute("currentOutgoLogs");
+
+        if (outgoLogs != null && !outgoLogs.isEmpty()) {
+            for (Map.Entry<String, ArrayList<OutgoItem>> entry : outgoLogs.entrySet()) {
+                String outgoDate = entry.getKey();
+                ArrayList<OutgoItem> outgoItems = entry.getValue();
+    %>
+    <div class="category-item" style="background-color: #e8f5e9; border-left: 5px solid #28521a; margin-bottom: 5px;">
+        <strong> <%= outgoDate %></strong>
+    </div>
+
+    <%
+        if (outgoItems != null && !outgoItems.isEmpty()) {
+            for (OutgoItem item : outgoItems) {
+    %>
+    <div class="category-item child-category" style="display: flex; justify-content: space-between; align-items: center;">
+        <span><%= item.getName() %></span>
+        <span style="font-weight: bold; color: #28521a;">
+             Количество: <%= item.getValueForOutgo() %>
+        </span>
+    </div>
+    <%
+        }
+    } else {
+    %>
+    <div class="category-item child-category" style="color: #999;">
+        <i class="fa-solid fa-info-circle"></i> Нет товаров в этой выдаче
+    </div>
+    <%
+        }
+    %>
+    <div style="margin-bottom: 15px;"></div>
+    <%
+        }
+    } else if (outgoLogs != null) {
+    %>
+    <div style="text-align:center;">Нет информации по данному автомобилю</div>
+    <%
+        }
+    %>
 </div>
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"
