@@ -383,11 +383,16 @@
     }
 %>
 
+<!-- инициализация списка товаров прихода -->
+<%
+    HashMap<Item, Integer> currentIncomeItems = (HashMap<Item, Integer>) session.getAttribute("incomeItems");
+%>
+
 <script>
     function hideAllSections() {
         var sections = ['successMessage', 'logSelectSection',
             'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection',
-        'addOutgoSection', 'outgoLogSelect', 'outgoLogResults'];
+        'addOutgoSection', 'outgoLogSelect', 'outgoLogResults', 'addIncomeSection'];
         sections.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -479,7 +484,7 @@
 
 <!-- добавление товара в список в расходной накладной -->
     function addItem() {
-        var article = document.getElementById('article').value.trim(); // trim уберет лишние пробелы
+        var article = document.getElementById('article').value.trim();
         var value = document.getElementById('value').value;
         var errorDiv = document.getElementById('itemError');
 
@@ -601,6 +606,162 @@
         form.submit();
     }
 
+<!-- добавление товара в список приходной накладной -->
+    function addIncomeItem() {
+        var article = document.getElementById('incomeItemArticle').value.trim();
+        var value = document.getElementById('incomeItemValue').value;
+        var errorDiv = document.getElementById('incomeItemError');
+
+        if (!article || !value || parseInt(value) <= 0) {
+            errorDiv.innerText = "Введите положительное число";
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (!article || !value) {
+            alert("Заполните все поля");
+            return;
+        }
+
+        var tbody = document.getElementById('incomeItemsBody');
+        var rows = Array.from(tbody.rows);
+
+        var isAlreadyAdded = rows.some(function(row) {
+            return row.cells[0] && row.cells[0].innerText === article;
+        });
+
+        if (isAlreadyAdded) {
+            errorDiv.innerText = "Этот товар уже добавлен";
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        var url = "/storekeeper/dashboard?action=check_income_item&article=" + encodeURIComponent(article) + "&value=" + encodeURIComponent(value);
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.status === "success") {
+                    errorDiv.style.display = 'none';
+                    // Добавляем значение из инпута в объект, чтобы таблица его отрисовала
+                    data.value = value;
+                    updateIncomeTableBody(data);
+                    document.getElementById('incomeItemArticle').value = '';
+                    document.getElementById('incomeItemValue').value = '';
+                } else if (data.status === "not_found") {
+                    document.getElementById('newItemModal').style.display = 'block';
+                    document.getElementById('modalOverlay').style.display = 'block';
+                    errorDiv.style.display = 'none';
+                } else {
+                    errorDiv.innerText = data.message;
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(function(err) {
+                console.error(err);
+                alert("Ошибка связи с сервером");
+            });
+    }
+
+    <!-- обновление списка добавленных товаров в приходной накладной -->
+    function updateIncomeTableBody(item) {
+        var tbody = document.getElementById('incomeItemsBody');
+
+        if (tbody.rows.length === 1 && tbody.rows[0].cells.length < 3) {
+            tbody.innerHTML = '';
+        }
+
+        var row = tbody.insertRow();
+        row.innerHTML = '<td>' + item.article + '</td>' +
+            '<td>' + item.name + '</td>' +
+            '<td>' + item.value + '</td>';
+    }
+
+<!-- сохранение нового товара в список приходной накладной-->
+    function saveNewItemToList() {
+        const article = document.getElementById('incomeItemArticle').value.trim();
+        const value = document.getElementById('incomeItemValue').value;
+
+        const params = new URLSearchParams();
+        params.append('action', 'add_new_item_temp');
+        params.append('article', article);
+        params.append('value', value);
+        params.append('name', document.getElementById('newName').value);
+        params.append('category', document.getElementById('newCategory').value);
+        params.append('brand', document.getElementById('newBrand').value);
+        params.append('minVal', document.getElementById('newMinVal').value);
+        params.append('recVal', document.getElementById('newRecVal').value);
+
+        fetch('/storekeeper/dashboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    // Добавляем в таблицу визуально
+                    updateIncomeTableBody({
+                        article: article,
+                        name: document.getElementById('newName').value,
+                        value: value
+                    });
+                    closeModal();
+                    // Очищаем основные инпуты
+                    document.getElementById('incomeItemArticle').value = '';
+                    document.getElementById('incomeItemValue').value = '';
+                } else {
+                    alert("Ошибка при сохранении: " + data.message);
+                }
+            });
+    }
+
+    function closeModal() {
+        document.getElementById('newItemModal').style.display = 'none';
+        document.getElementById('modalOverlay').style.display = 'none';
+        // Очистить поля модалки
+        document.getElementById('newName').value = '';
+        document.getElementById('newBrand').value = '';
+    }
+
+    function submitIncome() {
+        const noteNumber = document.getElementsByName('receiptNoteNumber')[0].value.trim();
+        const supplier = document.getElementsByName('supplierName')[0].value.trim();
+
+        if (!noteNumber || !supplier) {
+            alert("Пожалуйста, заполните номер накладной и наименование поставщика");
+            return;
+        }
+
+        const tbody = document.getElementById('incomeItemsBody');
+        if (tbody.rows.length === 1 && tbody.rows[0].cells.length < 3) {
+            alert("Заполните накладную");
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/storekeeper/dashboard';
+
+        const params = {
+            'action': 'confirm_income',
+            'noteNumber': noteNumber,
+            'supplierName': supplier
+        };
+
+        for (let key in params) {
+            let input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = params[key];
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+
     function handleButtonClick(action) {
 
         hideAllSections();
@@ -622,7 +783,7 @@
                 document.getElementById('outgoLogSelect').style.display = 'block';
                 break;
             case 'income':
-                document.getElementById('incomeSection').style.display = 'block';
+                document.getElementById('addIncomeSection').style.display = 'block';
                 break;
             case 'forecast':
                 document.getElementById('forecastSection').style.display = 'block';
@@ -1002,6 +1163,119 @@
         }
     %>
 </div>
+
+<!-- функция оформления прихода -->
+<div id="addIncomeSection" class="user-form-card category-container" style="display: none; width: 95%; max-width: 1200px;">
+    <h2 style="text-align: center; margin-bottom: 20px;">Оформление прихода</h2>
+
+    <div style="display: flex; gap: 30px;">
+        <div style="flex: 1;">
+            <form id="supplierForm">
+                <div class="form-group">
+                    <h2 style="margin-bottom: 10px; text-align: center;">Накладная</h2>
+                    <input type="text" name="receiptNoteNumber" class="form-control" autocomplete="off"
+                           required placeholder="Номер товарно-транспортной накладной">
+                    <input type="text" name="supplierName" class="form-control" autocomplete="off"
+                           required placeholder="Наименование поставщика" style="margin-top: 15px;">
+                </div>
+            </form>
+
+            <h2 style="margin-bottom: 10px; text-align: center;">Товар</h2>
+            <form id="incomeItemForm" style="margin-top: 20px;">
+                <input type="hidden" name="action" value="check_income_item">
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div id="incomeItemError" style="display: none; color: #721c24; background: #f8d7da; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center;"></div>
+
+                    <div>
+                        <input type="text" id="incomeItemArticle" name="article" class="form-control" required placeholder="Артикул">
+                    </div>
+                    <div>
+                        <input type="number" id="incomeItemValue" name="value" class="form-control" required placeholder="Количество" min="1">
+                    </div>
+                    <div style="text-align: center;">
+                        <button type="button" onclick="addIncomeItem()" class="btn-submit" style="display: block; margin: 0 auto; width: 50%; padding: 12px 25px;">
+                            <i class="fa-solid fa-plus"></i> Добавить
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div style="flex: 1.5;">
+            <h2 style="margin-bottom: 10px; text-align: center;">Добавленные товары:</h2>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table class="user-table" id="incomeItemsTable" style="width: 100%;">
+                    <thead>
+                    <tr>
+                        <th>Артикул</th>
+                        <th>Наименование</th>
+                        <th>Количество</th>
+                    </tr>
+                    </thead>
+                    <tbody id="incomeItemsBody">
+                    <%
+                        if (currentIncomeItems == null || currentIncomeItems.isEmpty()) {
+                    %>
+                    <tr><td colspan="3" style="text-align: center;">Товары не добавлены</td></tr>
+                    <%
+                    } else {
+                        for (Map.Entry<Item, Integer> entry : currentIncomeItems.entrySet()) {
+                            Item it = entry.getKey();
+                            Integer val = entry.getValue();
+                    %>
+                    <tr>
+                        <td><%= it.getArticle() %></td>
+                        <td><%= it.getName() %></td>
+                        <td><%= val %></td>
+                    </tr>
+                    <%
+                            }
+                        }
+                    %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top: 30px; text-align: center;">
+        <button type="button" onclick="submitIncome()" class="btn-submit" style="background-color: #28521a; width: 100%">
+            <i class="fa-solid fa-check"></i> Оформить приход
+        </button>
+    </div>
+</div>
+
+<div id="newItemModal" class="user-form-card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 0 20px rgba(0,0,0,0.5); width: 400px;">
+    <h3 style="text-align: center; padding: 15px;">Новый товар</h3>
+
+    <div class="form-group">
+        <input type="text" id="newName" class="form-control" placeholder="Наименование" style="margin-bottom: 10px;">
+        <select id="newCategory" class="form-control" style="margin-bottom: 10px;">
+            <option value="">Выберите категорию</option>
+            <%
+                ArrayList<Category> categories = (ArrayList<Category>) session.getAttribute("categories");
+                if (categories != null) {
+                    for (Category cat : categories) {
+            %>
+            <option value="<%= cat.getId() %>"><%= cat.getName() %></option>
+            <%
+                    }
+                }
+            %>
+        </select>
+        <input type="text" id="newBrand" class="form-control" placeholder="Бренд" style="margin-bottom: 10px;">
+        <input type="number" id="newMinVal" class="form-control" placeholder="Минимальное количество" style="margin-bottom: 10px;">
+        <input type="number" id="newRecVal" class="form-control" placeholder="Рекомендуемое количество">
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="button" onclick="saveNewItemToList()" class="btn-submit" style="background-color: #28521a;">Добавить</button>
+        <button type="button" onclick="closeModal()" class="btn-submit" style="background-color: #666;">Отмена</button>
+    </div>
+</div>
+<div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+
+
+
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"
      class="logo"

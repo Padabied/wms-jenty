@@ -24,6 +24,8 @@ import java.util.Map;
 public class StorekeeperDashboardServlet extends HttpServlet {
 
     private HashMap<Item, Integer> outgoItems = new HashMap<>();
+//    private HashMap<Item, Integer> incomeItems = new HashMap<>();
+//    private ArrayList<Item> newItems = new ArrayList<>();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -177,6 +179,29 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             response.sendRedirect("/storekeeper/dashboard");
             return;
         }
+        if ("check_income_item".equals(action)) {
+            HashMap<Item, Integer> incomeItems = (HashMap<Item, Integer>) request.getSession().getAttribute("incomeItems");
+            String article = request.getParameter("article");
+            int value = Integer.parseInt(request.getParameter("value"));
+
+            Item item = DBDataLoader.checkItemExists(article);
+
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+
+            if (item != null) {
+                incomeItems.put(item, value);
+                String json = String.format(
+                        "{\"status\":\"success\", \"article\":\"%s\", \"name\":\"%s\"}",
+                        item.getArticle(), item.getName()
+                );
+                response.getWriter().write(json);
+            } else {
+                // открытие модального окна
+                response.getWriter().write("{\"status\":\"not_found\"}");
+            }
+            return;
+        }
 
         List<Category> categories = DBDataLoader.loadAllCategories();
         List<User> users = DBDataLoader.loadAllUsers();
@@ -184,6 +209,12 @@ public class StorekeeperDashboardServlet extends HttpServlet {
         session.setAttribute("userName", user.getName());
         session.setAttribute("userList", users);
         session.setAttribute ("userId", user.getId());
+        if (session.getAttribute("incomeItems") == null) {
+            session.setAttribute("incomeItems", new HashMap<Item, Integer>());
+        }
+        if (session.getAttribute("newItems") == null) {
+            session.setAttribute("newItems", new ArrayList<Item>());
+        }
 
         request.getRequestDispatcher("/storekeeper-dashboard.jsp").forward(request, response);
     }
@@ -226,6 +257,66 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                 }
             }
             response.sendRedirect(request.getContextPath() + "/storekeeper/dashboard");
+        }
+        if ("add_new_item_temp".equals(action)) {
+            ArrayList<Item> newItems = (ArrayList<Item>) request.getSession().getAttribute("newItems");
+            String article = request.getParameter("article");
+            String name = request.getParameter("name");
+            String brand = request.getParameter("brand");
+            int categoryId = Integer.parseInt(request.getParameter("category"));
+            int value = Integer.parseInt(request.getParameter("value"));
+            int minVal = Integer.parseInt(request.getParameter("minVal"));
+            int recVal = Integer.parseInt(request.getParameter("recVal"));
+
+            Item newItem = new Item();
+            newItem.setArticle(article);
+            newItem.setName(name);
+            newItem.setBrand(brand);
+            newItem.setCategoryId(categoryId);
+            newItem.setValue(value);
+            newItem.setMinValue(minVal);
+            newItem.setRecommendedValue(recVal);
+
+            newItems.add(newItem);
+
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"status\":\"success\"}");
+            return;
+        }
+        if ("confirm_income".equals(action)) {
+            String noteNumber = request.getParameter("noteNumber");
+            String supplierName = request.getParameter("supplierName");
+            int userId = (int) session.getAttribute("userId");
+
+            HashMap<Item, Integer> incomeItems = (HashMap<Item, Integer>) session.getAttribute("incomeItems");
+            ArrayList<Item> newItems = (ArrayList<Item>) session.getAttribute("newItems");
+
+            int documentId = DBDataLoader.processIncome(noteNumber, supplierName, incomeItems, newItems, userId);
+
+            if (documentId != -1) {
+                //внесение лога
+                try (Connection conn = DBConnector.getConnection()) {
+                    String sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, document_id) VALUES (NOW(), ?, ?, ?)";
+                    PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                    String operationType = "приход";
+                    pstmt.setInt(1, userId);
+                    pstmt.setString(2, operationType);
+                    pstmt.setInt(3, documentId);
+                    pstmt.executeUpdate();
+                }
+                catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                session.setAttribute("incomeItems", new HashMap<Item, Integer>());
+                session.setAttribute("newItems", new ArrayList<Item>());
+
+                response.sendRedirect("/storekeeper/dashboard?success=income");
+            }
+            else {
+                request.setAttribute("error", "Ошибка при сохранении накладной");
+                request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
+            }
         }
     }
 

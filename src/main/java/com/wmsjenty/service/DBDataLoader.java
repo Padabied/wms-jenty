@@ -278,6 +278,26 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return null;
     }
 
+    public static Item checkItemExists(String article) {
+        try (Connection conn = DBConnector.getConnection()) {
+            String sql = "SELECT * FROM item WHERE article = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, article);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                Item item = new Item();
+                item.setId(rs.getInt("id"));
+                item.setArticle(rs.getString("article"));
+                item.setName(rs.getString("name"));
+                item.setBrand(rs.getString("brand"));
+                return item;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // создание записей в outgoing_invoices, outgoing_items, уменьшение количества товаров в item
     // возвращает document_id в случае успеха и -1 в случае ошибки
     public static int saveFullInvoice(String receiver, String regNum, int userId, HashMap<Item, Integer> items) {
@@ -377,6 +397,90 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
             e.printStackTrace();
         }
         return result;
+        }
+
+        public static int processIncome (String noteNumber, String supplierName, HashMap<Item, Integer> incomeItems ,
+                                             ArrayList<Item> newItems, int userId) {
+            Connection conn = null;
+            try {
+                conn = DBConnector.getConnection();
+                conn.setAutoCommit(false);
+
+                // создаем запись в таблице накладных (income_invoices)
+                String createIncomeInvoice = "INSERT INTO incoming_invoices (invoice_number, supplier_name, income_date, income_creator_id) VALUES (?, ?, NOW(), ?)";
+                PreparedStatement psCreateIncomeInvoice = conn.prepareStatement(createIncomeInvoice, Statement.RETURN_GENERATED_KEYS);
+                psCreateIncomeInvoice.setString(1, noteNumber);
+                psCreateIncomeInvoice.setString(2, supplierName);
+                psCreateIncomeInvoice.setInt(3, userId);
+                psCreateIncomeInvoice.executeUpdate();
+
+                //получаем id накладной
+                int invoiceId = -1;
+                ResultSet rs = psCreateIncomeInvoice.getGeneratedKeys();
+                if (rs.next()) {
+                    invoiceId = rs.getInt(1);
+                }
+
+                String sqlNewItem = "INSERT INTO item (article, name, brand, category_id, min_value, recommended_value, value) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                PreparedStatement psNewItem = conn.prepareStatement(sqlNewItem, Statement.RETURN_GENERATED_KEYS);
+
+                for (Item item : newItems) {
+                    // добавление товаров из списка ранее несуществующих
+                    psNewItem.setString(1, item.getArticle());
+                    psNewItem.setString(2, item.getName());
+                    psNewItem.setString(3, item.getBrand());
+                    psNewItem.setInt(4, item.getCategoryId());
+                    psNewItem.setInt(5, item.getMinValue());
+                    psNewItem.setInt(6, item.getRecommendedValue());
+                    psNewItem.setInt(7, item.getValue());
+                    psNewItem.executeUpdate();
+
+                    //получение id нового item
+                    int newItemId = -1;
+                    ResultSet rsItem = psNewItem.getGeneratedKeys();
+                    if (rsItem.next()) {
+                        newItemId = rsItem.getInt(1);
+                    }
+
+                    //добавление записи в incoming_items
+                    String createIncomingItem = "INSERT INTO incoming_items (income_invoice_id, income_item_id, value) VALUES (?, ?, ?)";
+                    PreparedStatement psIncomingItem = conn.prepareStatement(createIncomingItem);
+                    psIncomingItem.setInt(1, invoiceId);
+                    psIncomingItem.setInt(2, newItemId);
+                    psIncomingItem.setInt(3, item.getValue());
+                    psIncomingItem.executeUpdate();
+                }
+
+                // обновление количества ранее существующих товаров
+                String updateStock = "UPDATE item SET value = value + ? WHERE id = ?";
+                PreparedStatement psUpdateStock = conn.prepareStatement(updateStock);
+
+                for (Map.Entry<Item, Integer> entry : incomeItems.entrySet()) {
+                    //добавление записи в incoming_items
+                    String createIncomingItem = "INSERT INTO incoming_items (income_invoice_id, income_item_id, value) VALUES (?, ?, ?)";
+                    PreparedStatement psIncomingItem = conn.prepareStatement(createIncomingItem);
+                    psIncomingItem.setInt(1, invoiceId);
+                    psIncomingItem.setInt(2, entry.getKey().getId());
+                    psIncomingItem.setInt(3, entry.getValue());
+                    psIncomingItem.executeUpdate();
+
+                    // обновление количества товара на складе
+                    psUpdateStock.setInt(1, entry.getValue());
+                    psUpdateStock.setInt(2, entry.getKey().getId());
+                    psUpdateStock.executeUpdate();
+                }
+
+                conn.commit();
+                return invoiceId;
+
+            } catch (SQLException e) {
+                if (conn != null) {
+                    try { conn.rollback(); }
+                    catch (SQLException ex) { ex.printStackTrace(); }
+                }
+                e.printStackTrace();
+                return -1;
+            }
         }
     }
 
