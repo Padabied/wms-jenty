@@ -5,6 +5,7 @@ public class Operation {
     Integer userId;
     String operationType;
     Integer documentId;
+    String invoiceNumber;
 
     public Integer getDocumentId() {
         return documentId;
@@ -46,5 +47,13 @@ public class Operation {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public String getInvoiceNumber() {
+        return invoiceNumber;
+    }
+
+    public void setInvoiceNumber(String invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
     }
 }

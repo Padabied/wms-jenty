@@ -521,7 +521,7 @@
         <tr>
             <td style="white-space: nowrap;"><%= op.getOperationDate() %></td>
             <td><span class="role-badge" style="background-color: #28521a;"><%= op.getOperationType() %></span></td>
-            <td><%= op.getDocumentId() %></td>
+            <td><%= op.getInvoiceNumber() %></td>
             <td><%= op.getComment() != null ? op.getComment() : "" %></td>
         </tr>
         <% } %>
@@ -637,7 +637,7 @@
                     <div id="itemError" style="display: none; color: #721c24; background: #f8d7da; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center;"></div>
 
                     <div>
-                        <input type="text" id="article" name="article" class="form-control" required placeholder="Артикул">
+                        <input type="text" id="article" name="article" autocomplete="off" class="form-control" required placeholder="Артикул">
                     </div>
                     <div>
                         <input type="number" id="value" name="value" class="form-control" required placeholder="Количество" min="1">
@@ -702,7 +702,7 @@
         <input type="hidden" name="action" value="outgo_log">
 
         <div class="form-group">
-            <input type="text" name="regNumber" autocomplete="off" class="form-control" placeholder="Регистрационный номер автомобиля">
+            <input type="text" name="regNumber" autocomplete="off" required class="form-control" placeholder="Регистрационный номер автомобиля">
         </div>
 
         <button type="submit" class="btn-submit">

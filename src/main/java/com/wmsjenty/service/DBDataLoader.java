@@ -438,7 +438,7 @@ public class DBDataLoader {
         String getItemName = "SELECT * FROM item WHERE id = ?";
         try (Connection conn = DBConnector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(getOutgoInvoices)) {
-            pstmt.setString(1, regNumber);
+            pstmt.setString(1, regNumber.trim());
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 String outgoDate = rs.getString("outgo_date");
@@ -484,7 +484,7 @@ public class DBDataLoader {
                 conn = DBConnector.getConnection();
                 conn.setAutoCommit(false);
 
-                // создание записи в incomint_invoices
+                // создание записи в incoming_invoices
                 String createIncomeInvoice = "INSERT INTO incoming_invoices (invoice_number, supplier_name, income_date, income_creator_id) VALUES (?, ?, NOW(), ?)";
                 PreparedStatement psCreateIncomeInvoice = conn.prepareStatement(createIncomeInvoice, Statement.RETURN_GENERATED_KEYS);
                 psCreateIncomeInvoice.setString(1, noteNumber);

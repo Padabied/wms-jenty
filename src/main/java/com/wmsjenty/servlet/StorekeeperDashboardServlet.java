@@ -105,6 +105,16 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                         op.setOperationType(rs.getString("operation_type"));
                         op.setDocumentId(rs.getInt("document_id"));
                         op.setComment(rs.getString("comment"));
+
+                        if (rs.getString("operation_type").equals("приход")) {
+                            String getNoteNumber = "SELECT * FROM incoming_invoices WHERE id = ?";
+                            PreparedStatement psNoteNumber = conn.prepareStatement(getNoteNumber);
+                            psNoteNumber.setInt(1, rs.getInt("document_id"));
+                            ResultSet noteNumber = psNoteNumber.executeQuery();
+                            while (noteNumber.next()) {
+                                op.setInvoiceNumber(noteNumber.getString("invoice_number"));
+                            }
+                        }
                         logs.add(op);
                     }
                     request.getSession().setAttribute("logs", logs);
@@ -301,12 +311,12 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                 }
                 session.setAttribute("incomeItems", new HashMap<Item, Integer>());
                 session.setAttribute("newItems", new ArrayList<Item>());
-
+                session.setAttribute("successMessage", true);
                 response.sendRedirect("/storekeeper/dashboard?success=income");
             }
             else {
                 request.setAttribute("error", "Ошибка при сохранении накладной");
-                request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
+                request.getRequestDispatcher("/storekeeper/dashboard.jsp").forward(request, response);
             }
         }
     }
