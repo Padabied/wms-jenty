@@ -22,7 +22,7 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //Выход из системы
+        // выход из системы
         String action = request.getParameter("action");
 
         if (action != null && action.equals("logout")) {
@@ -34,7 +34,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        //Вход в систему
+        // вход в систему
         String login = request.getParameter("login");
         String password = request.getParameter("password");
 
@@ -58,7 +58,7 @@ public class LoginServlet extends HttpServlet {
                 String passwordHash = rs.getString("password");
                 boolean isActive = rs.getBoolean("isActive");
 
-                //проверка активности аккаунта
+                // проверка активности аккаунта
                 if (!isActive) {
                     request.setAttribute("error", "Логин или пароль введены неверно");
                     request.getRequestDispatcher("/login.jsp").forward(request, response);

@@ -15,17 +15,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @WebServlet(name = "StorekeeperDashboardServlet", value = "/storekeeper/dashboard")
 public class StorekeeperDashboardServlet extends HttpServlet {
 
     private HashMap<Item, Integer> outgoItems = new HashMap<>();
-//    private HashMap<Item, Integer> incomeItems = new HashMap<>();
-//    private ArrayList<Item> newItems = new ArrayList<>();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -167,15 +162,11 @@ public class StorekeeperDashboardServlet extends HttpServlet {
         if ("outgo_log".equals(action)) {
             String regNumber = request.getParameter("regNumber");
             HashMap<String, ArrayList<OutgoItem>> outgoDateAndItems = DBDataLoader.getOutgoInvoicesByRegNumber(regNumber);
-//            if (!outgoDateAndItems.isEmpty()) {
-//                session.setAttribute("outgoLogs", outgoDateAndItems);
-//            }
-//            else {
-//                request.getSession().setAttribute("successMessage", false);
-//                response.sendRedirect("/storekeeper/dashboard");
-//                return;
-//            }
-            session.setAttribute("outgoLogs", outgoDateAndItems);
+            TreeMap<String, ArrayList<OutgoItem>> sortedLogs = new TreeMap<>(Collections.reverseOrder());
+            if (outgoDateAndItems != null) {
+                sortedLogs.putAll(outgoDateAndItems);
+            }
+            session.setAttribute("outgoLogs", sortedLogs);
             response.sendRedirect("/storekeeper/dashboard");
             return;
         }

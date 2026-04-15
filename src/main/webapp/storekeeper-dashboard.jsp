@@ -3,6 +3,7 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="com.wmsjenty.model.*" %>
+<%@ page import="java.util.TreeMap" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -326,7 +327,7 @@
     </div>
 </div>
 
-    <%-- Проверка сообщения об успехе операции --%>
+    <%-- проверка сообщения об успехе операции --%>
     <%
         Boolean success = (Boolean) session.getAttribute("successMessage");
         if (success != null && success) {
@@ -368,7 +369,7 @@
 
 <!-- проверка запроса предоставления истории выдачи товара -->
 <%
-    HashMap<String, ArrayList<OutgoItem>> logsForRender = (HashMap<String, ArrayList<OutgoItem>>) session.getAttribute("outgoLogs");
+    TreeMap<String, ArrayList<OutgoItem>> logsForRender = (TreeMap<String, ArrayList<OutgoItem>>) session.getAttribute("outgoLogs");
     if (logsForRender != null) {
 %>
 <script>
@@ -437,13 +438,11 @@
             return line;
         }
 
-        // Заголовки
         data.push("Текущий остаток на складе");
         data.push("Дата: " + new Date().toLocaleDateString('ru-RU'));
         data.push("");
         data.push(makeSeparator());
 
-        // Заголовки столбцов
         var header = "|" + padRight("ID", colWidths.id) + "|";
         header += padRight("Наименование", colWidths.name) + "|";
         header += padRight("Артикул", colWidths.article) + "|";
@@ -453,7 +452,7 @@
         data.push(header);
         data.push(makeSeparator());
 
-        // Данные
+        // данные
         for (var i = 0; i < rows.length; i++) {
             var cols = rows[i].querySelectorAll('td');
             if (cols.length === 5) {
@@ -643,7 +642,7 @@
             .then(function(data) {
                 if (data.status === "success") {
                     errorDiv.style.display = 'none';
-                    // Добавляем значение из инпута в объект, чтобы таблица его отрисовала
+
                     data.value = value;
                     updateIncomeTableBody(data);
                     document.getElementById('incomeItemArticle').value = '';
@@ -700,14 +699,13 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    // Добавляем в таблицу визуально
                     updateIncomeTableBody({
                         article: article,
                         name: document.getElementById('newName').value,
                         value: value
                     });
                     closeModal();
-                    // Очищаем основные инпуты
+                    // очистка основных полей
                     document.getElementById('incomeItemArticle').value = '';
                     document.getElementById('incomeItemValue').value = '';
                 } else {
@@ -729,7 +727,7 @@
         const supplier = document.getElementsByName('supplierName')[0].value.trim();
 
         if (!noteNumber || !supplier) {
-            alert("Пожалуйста, заполните номер накладной и наименование поставщика");
+            alert("Заполните номер накладной и наименование поставщика");
             return;
         }
 
@@ -1122,7 +1120,7 @@
     <h2 style="text-align: center; margin-bottom: 20px; color: #333;">Журнал выдачи</h2>
 
     <%
-        HashMap<String, ArrayList<OutgoItem>> outgoLogs = (HashMap<String, ArrayList<OutgoItem>>) request.getAttribute("currentOutgoLogs");
+        TreeMap<String, ArrayList<OutgoItem>> outgoLogs = (TreeMap<String, ArrayList<OutgoItem>>) request.getAttribute("currentOutgoLogs");
 
         if (outgoLogs != null && !outgoLogs.isEmpty()) {
             for (Map.Entry<String, ArrayList<OutgoItem>> entry : outgoLogs.entrySet()) {
@@ -1187,10 +1185,10 @@
                     <div id="incomeItemError" style="display: none; color: #721c24; background: #f8d7da; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center;"></div>
 
                     <div>
-                        <input type="text" id="incomeItemArticle" name="article" class="form-control" required placeholder="Артикул">
+                        <input type="text" id="incomeItemArticle" name="article" class="form-control" autocomplete="off" required placeholder="Артикул">
                     </div>
                     <div>
-                        <input type="number" id="incomeItemValue" name="value" class="form-control" required placeholder="Количество" min="1">
+                        <input type="number" id="incomeItemValue" name="value" class="form-control" autocomplete="off" required placeholder="Количество" min="1">
                     </div>
                     <div style="text-align: center;">
                         <button type="button" onclick="addIncomeItem()" class="btn-submit" style="display: block; margin: 0 auto; width: 50%; padding: 12px 25px;">
@@ -1244,6 +1242,7 @@
     </div>
 </div>
 
+<!-- модальное окно для добавления нового товара в приходной накладной -->
 <div id="newItemModal" class="user-form-card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 0 20px rgba(0,0,0,0.5); width: 400px;">
     <h3 style="text-align: center; padding: 15px;">Новый товар</h3>
 
@@ -1262,9 +1261,9 @@
                 }
             %>
         </select>
-        <input type="text" id="newBrand" class="form-control" placeholder="Бренд" style="margin-bottom: 10px;">
-        <input type="number" id="newMinVal" class="form-control" placeholder="Минимальное количество" style="margin-bottom: 10px;">
-        <input type="number" id="newRecVal" class="form-control" placeholder="Рекомендуемое количество">
+        <input type="text" id="newBrand" class="form-control" autocomplete="off" placeholder="Бренд" style="margin-bottom: 10px;">
+        <input type="number" id="newMinVal" class="form-control" autocomplete="off" placeholder="Минимальное количество" style="margin-bottom: 10px;">
+        <input type="number" id="newRecVal" class="form-control" autocomplete="off" placeholder="Рекомендуемое количество">
     </div>
 
     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1273,8 +1272,6 @@
     </div>
 </div>
 <div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
-
-
 
 
 <img src="${pageContext.request.contextPath}/images/logo.svg"

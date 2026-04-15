@@ -284,13 +284,13 @@
 <body>
 <div class="navbar">
     <div class="nav-links">
-        <!-- 1. Поиск на складе -->
+        <!-- поиск на складе -->
         <button class="nav-btn" onclick="handleButtonClick('search')"><i class="fas fa-search"></i> Поиск на складе</button>
 
-        <!-- 2. Операции -->
+        <!-- операции -->
         <button class="nav-btn" onclick="handleButtonClick('operations')"><i class="fa-solid fa-clipboard-list"></i>  Журнал операций</button>
 
-        <!-- 3. Аккаунты с выпадающим списком -->
+        <!-- аккаунты -->
         <div class="dropdown" id="dropdownAccounts">
             <button class="nav-btn" onclick="toggleDropdown('dropdownAccounts')"><i class="fa-solid fa-users"></i> Аккаунты ▼</button>
             <div class="dropdown-content">
@@ -300,7 +300,7 @@
             </div>
         </div>
 
-        <!-- 4. Категории с выпадающим списком -->
+        <!-- категории -->
         <div class="dropdown" id="dropdownCategories">
             <button class="nav-btn" onclick="toggleDropdown('dropdownCategories')"><i class="fa-solid fa-layer-group"></i> Категории ▼</button>
             <div class="dropdown-content">
@@ -310,7 +310,7 @@
             </div>
         </div>
 
-        <!-- 5. Корректировка остатков -->
+        <!-- корректировка остатков -->
         <button class="nav-btn" onclick="handleButtonClick('adjustment')"><i class="fa-solid fa-pencil"></i> Корректировка остатков</button>
     </div>
 
@@ -332,7 +332,7 @@
     </div>
 </div>
 
-<%-- Проверка сообщения об успехе операции --%>
+<%-- проверка сообщения об успехе операции --%>
 <%
     Boolean success = (Boolean) session.getAttribute("successMessage");
     if (success != null && success) {
@@ -365,7 +365,7 @@
         });
     }
 
-    // Функция обработки нажатия на кнопки
+    // функция обработки нажатия на кнопки
     function handleButtonClick(action) {
 
         switch(action) {
@@ -426,7 +426,7 @@
         document.getElementById('confirmItemName').innerText = "Загрузка...";
         document.getElementById('confirmOldValue').innerText = "...";
 
-        // Фоновый запрос к сервлету для получения данных о товаре
+        // получить данные о товаре
         fetch('${pageContext.request.contextPath}/admin/dashboard?action=getItemInfo&itemId=' + itemId)
             .then(response => response.json())
             .then(data => {
@@ -452,7 +452,7 @@
 
 </script>
 
-<!-- Секция "список категорий" -->
+<!-- секция "список категорий" -->
 <div id="categoryListSection" class="category-container">
     <%
         ArrayList<Category> categories = (ArrayList<Category>) session.getAttribute("categories");
@@ -484,7 +484,7 @@
     %>
 </div>
 
-<!-- секция "добавить категорию -->
+<!-- секция "добавить категорию" -->
 <div id="addCategorySection" class="user-form-card category-container" style="display: none;">
     <h2>Добавить категорию</h2>
 
@@ -746,7 +746,7 @@
         <% for (Operation op : logs) { %>
         <tr>
             <td style="white-space: nowrap;"><%= op.getOperationDate() %></td>
-            <td><%= DBDataLoader.getUserId(op.getUserId()) %></td>
+            <td><%= DBDataLoader.getUserNameById(op.getUserId()) %></td>
             <td><span class="role-badge" style="background-color: #28521a;"><%= op.getOperationType() %></span></td>
             <td><%= op.getDocumentId() %></td>
             <td><%= op.getComment() != null ? op.getComment() : "" %></td>
@@ -819,7 +819,7 @@
     </div>
 </div>
 
-<!-- секция "поиск товара на складе -->
+<!-- секция "поиск товара на складе" -->
 <div id="searchSection" class="category-container" style="display: none; width: 95%; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     <form action="${pageContext.request.contextPath}/admin/dashboard" method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
         <input type="hidden" name="action" value="search_items">

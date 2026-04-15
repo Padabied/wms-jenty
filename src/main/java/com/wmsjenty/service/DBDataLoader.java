@@ -16,7 +16,10 @@ import java.util.List;
 import java.util.Map;
 
 public class DBDataLoader {
-
+    /**
+     * Функция для получения списка всех категорий
+     * @return список, содержащий все категории в таблице category
+     */
     public static List<Category> loadAllCategories() {
         List<Category> categories = new ArrayList<>();
         String sql = "SELECT id, name, parent_id FROM category ORDER BY id";
@@ -41,6 +44,11 @@ public class DBDataLoader {
         return categories;
     }
 
+    /**
+     * Функция для получения списка всех пользователей, содержащихся
+     * в таблице users базы данных. Включает также деактивированные аккаунты.
+     * @return список активных и неактивных аккаунтов системы.
+     */
     public static List<User> loadAllUsers() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users";
@@ -63,6 +71,12 @@ public class DBDataLoader {
         return users;
     }
 
+    /**
+     * Определяет, вносил ли указанный пользователь какие либо изменения в БД,
+     * например оформление прихода или расхода.
+     * @param id id пользователя в системе.
+     * @return boolean с результатом поиска.
+     */
     public static boolean hasUserOperations(int id) {
         String sqlStatement = "SELECT COUNT(*) FROM operations_log WHERE user_id = ?";
         try (Connection conn = DBConnector.getConnection()) {
@@ -80,6 +94,13 @@ public class DBDataLoader {
         return false;
     }
 
+    /**
+     * Функция для получения наименования и значения количества товара в БД.
+     * Ответ возвращается  в JSON формате.
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     public static void handleGetItemInfo(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String itemId = request.getParameter("itemId");
         response.setContentType("application/json");
@@ -104,7 +125,14 @@ public class DBDataLoader {
         }
     }
 
-public static void handleSearchItems(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    /**
+     * Функция используется при поиске товара на складе.
+     * По заданным параметрам, например, категория, наименование, артикул, производится поиск в базе данных.
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public static void handleSearchItems(HttpServletRequest request, HttpServletResponse response) throws IOException {
     HttpSession session = request.getSession();
     User user = (User) session.getAttribute("user");
 
@@ -186,7 +214,12 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
     }
 }
 
-    public static String getUserId(Integer userId) {
+    /**
+     * Функция для получения имени пользователя с заданным ID
+     * @param userId ID пользователя в системе
+     * @return
+     */
+    public static String getUserNameById(Integer userId) {
         String sql = "SELECT * FROM users WHERE id = ?";
         try (Connection conn = DBConnector.getConnection()) {
             PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -202,6 +235,11 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return null;
     }
 
+    /**
+     * Функция для получения списка товаров, значение количества которых
+     * меньше либо равно минимальному (заданному параметром min_value).
+     * @return список товаров.
+     */
     public static ArrayList<Item> getForecast() {
         ArrayList<Item> result = new ArrayList<>();
         String sql = "SELECT * FROM item WHERE value <= min_value";
@@ -228,6 +266,11 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return result;
     }
 
+    /**
+     * Функция для получения полного списка товаров, находящихся на складе,
+     * значение количества которых больше нуля.
+     * @return список найденных товаров.
+     */
     public static ArrayList<Item> getInventoryList() {
         ArrayList<Item> result = new ArrayList<>();
         String sql = "SELECT * FROM item WHERE value > 0";
@@ -253,6 +296,14 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return result;
     }
 
+    /**
+     * Функция для проверки наличия в базе данных достаточного количества товара с указанным артикулом.
+     * Проверяется наличие товара заданного артикула, а также наличие указанного количества
+     * @param article артикул товара.
+     * @param value запрашиваемое количество.
+     * @return найденный товар, либо null, если товар не найден или запрашиваемое количество не соответствует
+     * количеству товара в наличии.
+     */
     public static Item checkItemAvailable(String article, Integer value) {
         String sql = "SELECT * FROM item WHERE article = ? AND value >= ?";
 
@@ -278,6 +329,11 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return null;
     }
 
+    /**
+     * Проверка наличия товара с указанным артикулом в базе данных.
+     * @param article артикул искомого товара.
+     * @return найденный товар, либо null, если товара с заданным артикулом не существует в БД.
+     */
     public static Item checkItemExists(String article) {
         try (Connection conn = DBConnector.getConnection()) {
             String sql = "SELECT * FROM item WHERE article = ?";
@@ -298,8 +354,15 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return null;
     }
 
-    // создание записей в outgoing_invoices, outgoing_items, уменьшение количества товаров в item
-    // возвращает document_id в случае успеха и -1 в случае ошибки
+    /**
+     * Основная функция при добавлении новой расходной накладной.
+     * Создание записей в таблицах outgoing_invoices, outgoing_items, уменьшение количества товаров в item.
+     * @param receiver получатель.
+     * @param regNum регистрационный номер автомобиля.
+     * @param userId id пользователя, создавшего накладную.
+     * @param items список товаров к списанию в формате "Товар-Количество".
+     * @return id созданной накладной в случае успеха, либо -1 в случае ошибки.
+     */
     public static int saveFullInvoice(String receiver, String regNum, int userId, HashMap<Item, Integer> items) {
         Connection conn = null;
         int generatedId = -1;
@@ -363,6 +426,11 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         }
     }
 
+    /**
+     * Функция для получения сведений о выдаче товаров по регистрационному номеру автомобиля.
+     * @param regNumber регистрационный номер автомобиля.
+     * @return таблица в формате "Дата-Список выданных товаров".
+     */
     public static HashMap<String, ArrayList<OutgoItem>> getOutgoInvoicesByRegNumber(String regNumber) {
         HashMap<String, ArrayList<OutgoItem>> result = new HashMap<>();
         String getOutgoInvoices = "SELECT * FROM outgoing_invoices WHERE truck_reg_number = ?";
@@ -399,6 +467,16 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
         return result;
         }
 
+    /**
+     * Функция для оформления приходной накладной. Включает в себя добавление записей в incoming_invoices,
+     * incoming_item, item, operations_log.
+     * @param noteNumber номер товарно-транспортной накладной.
+     * @param supplierName наименование поставщика.
+     * @param incomeItems список товаров, уже присутствующих в базе данных.
+     * @param newItems список товаров, ранее не присутствовавших в базе данных.
+     * @param userId ID пользователя, создающего накладную.
+     * @return номер документа, либо -1 в случае ошибки.
+     */
         public static int processIncome (String noteNumber, String supplierName, HashMap<Item, Integer> incomeItems ,
                                              ArrayList<Item> newItems, int userId) {
             Connection conn = null;
@@ -406,7 +484,7 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
                 conn = DBConnector.getConnection();
                 conn.setAutoCommit(false);
 
-                // создаем запись в таблице накладных (income_invoices)
+                // создание записи в incomint_invoices
                 String createIncomeInvoice = "INSERT INTO incoming_invoices (invoice_number, supplier_name, income_date, income_creator_id) VALUES (?, ?, NOW(), ?)";
                 PreparedStatement psCreateIncomeInvoice = conn.prepareStatement(createIncomeInvoice, Statement.RETURN_GENERATED_KEYS);
                 psCreateIncomeInvoice.setString(1, noteNumber);
@@ -414,7 +492,7 @@ public static void handleSearchItems(HttpServletRequest request, HttpServletResp
                 psCreateIncomeInvoice.setInt(3, userId);
                 psCreateIncomeInvoice.executeUpdate();
 
-                //получаем id накладной
+                //получение id накладной
                 int invoiceId = -1;
                 ResultSet rs = psCreateIncomeInvoice.getGeneratedKeys();
                 if (rs.next()) {

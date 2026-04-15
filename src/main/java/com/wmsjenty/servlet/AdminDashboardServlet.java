@@ -232,7 +232,7 @@ public class AdminDashboardServlet extends HttpServlet {
             String confirmPassword = request.getParameter("confirm_password");
             String role = request.getParameter("role");
 
-            //Проверки корректности
+            // проверки корректности
             if (name == null || name.trim().isEmpty() ||
             login == null || login.trim().isEmpty() ||
             password == null || password.trim().isEmpty() ||
