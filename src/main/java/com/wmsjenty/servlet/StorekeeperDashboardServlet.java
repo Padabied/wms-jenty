@@ -103,7 +103,6 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                         Operation op = new Operation();
                         op.setOperationDate(rs.getTimestamp("operation_date").toString());
                         op.setOperationType(rs.getString("operation_type"));
-                        op.setDocumentId(rs.getInt("document_id"));
                         op.setComment(rs.getString("comment"));
 
                         if (rs.getString("operation_type").equals("приход")) {

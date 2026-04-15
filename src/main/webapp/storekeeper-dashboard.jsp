@@ -521,7 +521,7 @@
         <tr>
             <td style="white-space: nowrap;"><%= op.getOperationDate() %></td>
             <td><span class="role-badge" style="background-color: #28521a;"><%= op.getOperationType() %></span></td>
-            <td><%= op.getInvoiceNumber() %></td>
+            <td><%= op.getInvoiceNumber() == null ? "" : op.getInvoiceNumber() %></td>
             <td><%= op.getComment() != null ? op.getComment() : "" %></td>
         </tr>
         <% } %>

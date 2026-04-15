@@ -107,8 +107,18 @@ public class AdminDashboardServlet extends HttpServlet {
                         op.setOperationDate(rs.getTimestamp("operation_date").toString());
                         op.setUserId(rs.getInt("user_id"));
                         op.setOperationType(rs.getString("operation_type"));
-                        op.setDocumentId(rs.getInt("document_id"));
                         op.setComment(rs.getString("comment"));
+
+                        if (rs.getString("operation_type").equals("приход")) {
+                            String getNoteNumber = "SELECT * FROM incoming_invoices WHERE id = ?";
+                            PreparedStatement psNoteNumber = conn.prepareStatement(getNoteNumber);
+                            psNoteNumber.setInt(1, rs.getInt("document_id"));
+                            ResultSet noteNumber = psNoteNumber.executeQuery();
+                            while (noteNumber.next()) {
+                                op.setInvoiceNumber(noteNumber.getString("invoice_number"));
+                            }
+                        }
+
                         logs.add(op);
                     }
                     request.getSession().setAttribute("logs", logs);
