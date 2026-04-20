@@ -2,6 +2,7 @@ package com.wmsjenty.util;
 
 import com.wmsjenty.model.*;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -857,6 +858,12 @@ public class DBDataLoader {
         }
     }
 
+    /**
+     * Корректировка значения количества товара в таблице item.
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     public static void handleAdjustItemValue (HttpServletRequest request, HttpServletResponse response) throws IOException {
         String itemIdString = request.getParameter("itemId");
         String newValueString = request.getParameter("value");
@@ -917,6 +924,168 @@ public class DBDataLoader {
         catch (Exception e) {
             e.printStackTrace();
             request.getSession().setAttribute("successMessage", false);
+        }
+    }
+
+    /**
+     * Получение списка операций кладовщика по заданным датам.
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public static void handleGetLogsStorekeeper (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String startDateStr = request.getParameter("startDate");
+        String endDateStr = request.getParameter("endDate");
+        String opType = request.getParameter("operationType");
+        String userId = String.valueOf(request.getSession().getAttribute("userId"));
+        String sql = "SELECT * FROM operations_log\n" +
+                "WHERE operation_date BETWEEN ? AND ?\n" +
+                "  AND user_id = ?\n" +
+                "  AND ( ? = '' OR operation_type = ? )\n" +
+                "ORDER BY operation_date DESC";
+
+        java.time.LocalDate now = java.time.LocalDate.now();
+        java.time.LocalDateTime startDateTime;
+        java.time.LocalDateTime endDateTime;
+
+        try {
+            if ((startDateStr == null || startDateStr.isEmpty()) && (endDateStr == null || endDateStr.isEmpty())) {
+                startDateTime = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
+                endDateTime = now.atTime(23, 59, 59);
+            } else if (endDateStr == null || endDateStr.isEmpty()) {
+                startDateTime = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+                endDateTime = now.atTime(23, 59, 59);
+
+                if (startDateTime.toLocalDate().isAfter(now)) {
+                    request.getSession().setAttribute("successMessage", false);
+                    response.sendRedirect("/storekeeper/dashboard");
+                    return;
+                }
+            } else if (startDateStr == null || startDateStr.isEmpty()) {
+                startDateTime = java.time.LocalDate.parse(endDateStr).atStartOfDay();
+                endDateTime = java.time.LocalDate.parse(endDateStr).atTime(23, 59, 59);
+            } else {
+                startDateTime = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+                endDateTime = java.time.LocalDate.parse(endDateStr).atTime(23, 59, 59);
+            }
+
+            if (startDateTime.isAfter(endDateTime)) {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/storekeeper/dashboard");
+                return;
+            }
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+
+                pstmt.setObject(1, startDateTime);
+                pstmt.setObject(2, endDateTime);
+                pstmt.setString(3, userId);
+                pstmt.setString(4, opType);
+                pstmt.setString(5, opType);
+
+                ResultSet rs = pstmt.executeQuery();
+                ArrayList<Operation> logs = new ArrayList<>();
+
+                while (rs.next()) {
+                    Operation op = new Operation();
+                    op.setOperationDate(rs.getTimestamp("operation_date").toString());
+                    op.setOperationType(rs.getString("operation_type"));
+                    op.setComment(rs.getString("comment"));
+
+                    if (rs.getString("operation_type").equals("приход")) {
+                        String getNoteNumber = "SELECT * FROM incoming_invoices WHERE id = ?";
+                        PreparedStatement psNoteNumber = conn.prepareStatement(getNoteNumber);
+                        psNoteNumber.setInt(1, rs.getInt("document_id"));
+                        ResultSet noteNumber = psNoteNumber.executeQuery();
+                        while (noteNumber.next()) {
+                            op.setInvoiceNumber(noteNumber.getString("invoice_number"));
+                        }
+                    }
+                    logs.add(op);
+                }
+                request.getSession().setAttribute("logs", logs);
+                request.getSession().removeAttribute("successMessage");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.getSession().setAttribute("successMessage", false);
+        }
+    }
+
+    /**
+     * Добавление товара, ранее не существовавшего в таблице item в список newItems. Функция проверяет,
+     * существует ли запись с заданным
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public static void handleAddNotExistingItemToListForIncome (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        ArrayList<Item> newItems = (ArrayList<Item>) request.getSession().getAttribute("newItems");
+        String article = request.getParameter("article");
+        String name = request.getParameter("name");
+        String brand = request.getParameter("brand");
+        int categoryId = Integer.parseInt(request.getParameter("category"));
+        int value = Integer.parseInt(request.getParameter("value"));
+        int minVal = Integer.parseInt(request.getParameter("minVal"));
+        int recVal = Integer.parseInt(request.getParameter("recVal"));
+
+        Item newItem = new Item();
+        newItem.setArticle(article);
+        newItem.setName(name);
+        newItem.setBrand(brand);
+        newItem.setCategoryId(categoryId);
+        newItem.setValue(value);
+        newItem.setMinValue(minVal);
+        newItem.setRecommendedValue(recVal);
+
+        newItems.add(newItem);
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"status\":\"success\"}");
+    }
+
+    /**
+     * Оформление прихода товара. Для товаров, ранее не существовавших в таблице item выполняется операция ADD,
+     * для товаров, уже существующих в БД, выполняется операция UPDATE с изменением актуального количества товара.
+     * @param request
+     * @param response
+     * @throws IOException
+     * @throws ServletException
+     */
+    public static void handleConfirmIncome(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String noteNumber = request.getParameter("noteNumber");
+        String supplierName = request.getParameter("supplierName");
+        int userId = (int) request.getSession().getAttribute("userId");
+
+        HashMap<Item, Integer> incomeItems = (HashMap<Item, Integer>) request.getSession().getAttribute("incomeItems");
+        ArrayList<Item> newItems = (ArrayList<Item>) request.getSession().getAttribute("newItems");
+
+        int documentId = DBDataLoader.processIncome(noteNumber, supplierName, incomeItems, newItems, userId);
+
+        if (documentId != -1) {
+            //внесение лога
+            try (Connection conn = DBConnector.getConnection()) {
+                String sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, document_id) VALUES (NOW(), ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                String operationType = "приход";
+                pstmt.setInt(1, userId);
+                pstmt.setString(2, operationType);
+                pstmt.setInt(3, documentId);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+            }
+            request.getSession().setAttribute("incomeItems", new HashMap<Item, Integer>());
+            request.getSession().setAttribute("newItems", new ArrayList<Item>());
+            request.getSession().setAttribute("successMessage", true);
+            response.sendRedirect("/storekeeper/dashboard?success=income");
+        }
+        else {
+            request.setAttribute("error", "Ошибка при сохранении накладной");
+            request.getRequestDispatcher("/storekeeper/dashboard.jsp").forward(request, response);
         }
     }
 }
