@@ -1,12 +1,11 @@
 package com.wmsjenty.servlet;
 
 import com.wmsjenty.model.Category;
-import com.wmsjenty.model.Item;
 import com.wmsjenty.model.Operation;
 import com.wmsjenty.model.User;
-import com.wmsjenty.service.DBConnector;
-import com.wmsjenty.service.DBDataLoader;
-import com.wmsjenty.service.PasswordHasher;
+import com.wmsjenty.util.DBConnector;
+import com.wmsjenty.util.DBDataLoader;
+import com.wmsjenty.util.PasswordHasher;
 
 import javax.servlet.*;
 import javax.servlet.http.*;

@@ -1,15 +1,13 @@
 package com.wmsjenty.servlet;
 
 import com.wmsjenty.model.*;
-import com.wmsjenty.service.DBConnector;
-import com.wmsjenty.service.DBDataLoader;
-import com.wmsjenty.service.PasswordHasher;
+import com.wmsjenty.util.DBConnector;
+import com.wmsjenty.util.DBDataLoader;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

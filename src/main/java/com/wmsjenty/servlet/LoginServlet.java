@@ -1,8 +1,8 @@
 package com.wmsjenty.servlet;
 
 import com.wmsjenty.model.User;
-import com.wmsjenty.service.DBConnector;
-import com.wmsjenty.service.PasswordHasher;
+import com.wmsjenty.util.DBConnector;
+import com.wmsjenty.util.PasswordHasher;
 
 import javax.servlet.*;
 import javax.servlet.http.*;

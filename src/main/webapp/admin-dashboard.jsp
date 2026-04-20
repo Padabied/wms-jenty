@@ -3,7 +3,7 @@
 <%@ page import="com.wmsjenty.model.User" %>
 <%@ page import="com.wmsjenty.model.Operation" %>
 <%@ page import="com.wmsjenty.model.Item" %>
-<%@ page import="com.wmsjenty.service.DBDataLoader" %>
+<%@ page import="com.wmsjenty.util.DBDataLoader" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>

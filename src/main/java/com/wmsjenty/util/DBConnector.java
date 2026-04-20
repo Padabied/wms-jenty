@@ -1,4 +1,4 @@
-package com.wmsjenty.service;
+package com.wmsjenty.util;
 import java.sql.*;
 
 public class DBConnector {

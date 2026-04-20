@@ -1,5 +1,5 @@
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="com.wmsjenty.service.DBDataLoader" %>
+<%@ page import="com.wmsjenty.util.DBDataLoader" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="com.wmsjenty.model.*" %>
