@@ -560,8 +560,8 @@ public class DBDataLoader {
         }
 
     /**
-     * Функция производит поиск записей в таблице operations_log по заданным параметрам
-     * @param request запрос, содержащий входные данные
+     * Функция производит поиск записей в таблице operations_log по заданным параметрам.
+     * @param request запрос, содержащий входные данные.
      * @param response
      * @throws IOException
      */
@@ -647,5 +647,277 @@ public class DBDataLoader {
                 request.getSession().setAttribute("successMessage", false);
             }
         }
+
+    /**
+     * Добавляет запись в таблице category, создавая новую категорию товаров.
+     * @param request запрос, содержащий входные данные.
+     * @param response
+     * @throws IOException
+     */
+        public static void handleAddCategory (HttpServletRequest request, HttpServletResponse response) throws IOException {
+            String name = request.getParameter("categoryName");
+            String pIdString = request.getParameter("parentId");
+            String sqlStatement = "INSERT INTO category (name, parent_id) VALUES (?, ?)";
+
+            //Проверка на ячейки с пробелами
+            if (name == null || name.trim().isEmpty()) {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+            Integer parentId = null;
+            if (pIdString != null && !pIdString.isEmpty()) {
+                parentId = Integer.parseInt(pIdString);
+            }
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setString(1, name);
+                if (parentId == null) pstmt.setNull(2, java.sql.Types.INTEGER);
+                else {
+                    pstmt.setInt(2, parentId);
+                }
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
+
+                //внесение лога
+                String logStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer id = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "добавление категории";
+                pstmt = conn.prepareStatement(logStatement);
+                pstmt.setInt (1, id);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, name);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("successMessage", false);
+            }
+        }
+
+    /**
+     * Удаление записи из таблицы category.
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public static void handleDeleteCategory (HttpServletRequest request, HttpServletResponse response) throws IOException {
+            String idString = request.getParameter("id");
+            Integer id;
+            String name = null;
+            String sqlStatement = "DELETE FROM category WHERE id IN (?)";
+            if (idString != null && !idString.isEmpty()) {
+                id = Integer.parseInt(idString);
+                ArrayList<Category> categories = (ArrayList<Category>) request.getSession().getAttribute("categories");
+                for (Category c : categories) {
+                    if (c.getId() == id) {
+                        name = c.getName();
+                        break;
+                    }
+                }
+            }
+            else {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+
+            try (Connection conn = DBConnector.getConnection()) {
+                PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+                pstmt.setInt(1, id);
+                pstmt.executeUpdate();
+                request.getSession().setAttribute("successMessage", true);
+                request.getSession().removeAttribute("logs");
+
+                //внесение логов
+                String logStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+                Integer userId = (Integer) request.getSession().getAttribute("userId");
+                String operationType = "удаление категории";
+                pstmt = conn.prepareStatement(logStatement);
+                pstmt.setInt (1, userId);
+                pstmt.setString(2, operationType);
+                pstmt.setString(3, name);
+                pstmt.executeUpdate();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("successMessage", false);
+            }
+        }
+
+    /**
+     * Добавление нового пользователя в таблицу users.
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public static void handleAddUser (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String name = request.getParameter("name");
+        String login = request.getParameter("login");
+        String password = request.getParameter("password");
+        String confirmPassword = request.getParameter("confirm_password");
+        String role = request.getParameter("role");
+
+        // проверки корректности
+        if (name == null || name.trim().isEmpty() ||
+                login == null || login.trim().isEmpty() ||
+                password == null || password.trim().isEmpty() ||
+                confirmPassword == null || confirmPassword.trim().isEmpty() ||
+                role == null || !password.equals(confirmPassword)) {
+            request.getSession().setAttribute("successMessage", false);
+            response.sendRedirect("/admin/dashboard");
+            return;
+        }
+        String hashedPassword = PasswordHasher.encode(password);
+        String sql = "INSERT INTO users (name, role, login, password) VALUES (?, ?, ?, ?)";
+
+        try (Connection conn = DBConnector.getConnection()) {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, name);
+            pstmt.setString(2, role);
+            pstmt.setString(3, login);
+            pstmt.setString(4, hashedPassword);
+            pstmt.executeUpdate();
+            request.getSession().setAttribute("successMessage", true);
+            request.getSession().removeAttribute("logs");
+
+            String sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+            Integer userId = (Integer) request.getSession().getAttribute("userId");
+            String operationType = "добавление аккаунта";
+            pstmt = conn.prepareStatement(sqlStatement);
+            pstmt.setInt (1, userId);
+            pstmt.setString(2, operationType);
+            pstmt.setString(3, login + ": " + name);
+            pstmt.executeUpdate();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            request.getSession().setAttribute("successMessage", false);
+        }
     }
+
+    /**
+     * Удаление записи из таблицы users. Если указанный пользователь совершал какие-либо операции над базой данных
+     * и имеет записи в operations_log, аккаунт не будет удален, а будет деактиварован (флаг isActive = false).
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public static void handleDeleteUser (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String idString = request.getParameter("id");
+        Integer id;
+        String name = null;
+        String sqlStatement;
+        boolean operationsExist = false;
+        if (idString != null && !idString.isEmpty()) {
+            id = Integer.parseInt(idString);
+            ArrayList<User> users = (ArrayList<User>) request.getSession().getAttribute("userList");
+            for (User user : users) {
+                if (user.getId() == id) {
+                    name = user.getName();
+                    operationsExist = DBDataLoader.hasUserOperations(id);
+                    break;
+                }
+            }
+        }
+        else {
+            request.getSession().setAttribute("successMessage", false);
+            response.sendRedirect("/admin/dashboard");
+            return;
+        }
+        if (!operationsExist) {
+            sqlStatement = "DELETE FROM users WHERE id IN (?)";
+        }
+        else {
+            sqlStatement = "UPDATE users SET isActive = false WHERE id = ?";
+        }
+
+        try (Connection conn = DBConnector.getConnection()) {
+            PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+            request.getSession().setAttribute("successMessage", true);
+            request.getSession().removeAttribute("logs");
+
+            //внесение логов
+            String logStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+            Integer userId = (Integer) request.getSession().getAttribute("userId");
+            String operationType = "удаление аккаунта";
+            pstmt = conn.prepareStatement(logStatement);
+            pstmt.setInt (1, userId);
+            pstmt.setString(2, operationType);
+            pstmt.setString(3, name);
+            pstmt.executeUpdate();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            request.getSession().setAttribute("successMessage", false);
+        }
+    }
+
+    public static void handleAdjustItemValue (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String itemIdString = request.getParameter("itemId");
+        String newValueString = request.getParameter("value");
+        String comment = request.getParameter("comment");
+        Integer itemId;
+        Integer newValue;
+
+        if (itemIdString != null && !itemIdString.isEmpty() &&
+                newValueString != null && !newValueString.isEmpty()) {
+            itemId = Integer.parseInt(itemIdString);
+            newValue = Integer.parseInt(newValueString);
+            if (newValue < 0) {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+        }
+        else {
+            request.getSession().setAttribute("successMessage", false);
+            response.sendRedirect("/admin/dashboard");
+            return;
+        }
+
+        String ifItemExistSql = "SELECT * FROM item WHERE id = ?";
+        String setNewItemValue = "UPDATE item SET value = ? WHERE id = ?";
+
+        try (Connection conn = DBConnector.getConnection()) {
+            PreparedStatement pstmt = conn.prepareStatement(ifItemExistSql);
+            pstmt.setInt(1, itemId);
+            ResultSet rs = pstmt.executeQuery();
+            if (!rs.next()) {
+                request.getSession().setAttribute("successMessage", false);
+                response.sendRedirect("/admin/dashboard");
+                return;
+            }
+            String itemName = rs.getString("name");
+            String oldValue = String.valueOf(rs.getInt("value"));
+
+            pstmt = conn.prepareStatement(setNewItemValue);
+            pstmt.setInt(1, newValue);
+            pstmt.setInt(2, itemId);
+            pstmt.executeUpdate();
+
+            //внесение логов
+            String logStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, comment) VALUES (NOW(), ?, ?, ?)";
+            Integer userId = (Integer) request.getSession().getAttribute("userId");
+            String operationType = "корректировка остатков";
+            pstmt = conn.prepareStatement(logStatement);
+            comment = comment + "\n" + "Наименование: " + itemName + "\n" + "Старое значение: " +
+                    oldValue + "\n" + "Новое значение: " + newValueString;
+            pstmt.setInt (1, userId);
+            pstmt.setString(2, operationType);
+            pstmt.setString(3, comment);
+            pstmt.executeUpdate();
+            request.getSession().setAttribute("successMessage", true);
+            request.getSession().removeAttribute("logs");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            request.getSession().setAttribute("successMessage", false);
+        }
+    }
+}
 
