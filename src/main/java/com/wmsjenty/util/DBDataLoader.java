@@ -1,15 +1,13 @@
 package com.wmsjenty.util;
 
-import com.wmsjenty.model.Category;
-import com.wmsjenty.model.Item;
-import com.wmsjenty.model.OutgoItem;
-import com.wmsjenty.model.User;
+import com.wmsjenty.model.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -558,6 +556,95 @@ public class DBDataLoader {
                 }
                 e.printStackTrace();
                 return -1;
+            }
+        }
+
+    /**
+     * Функция производит поиск записей в таблице operations_log по заданным параметрам
+     * @param request запрос, содержащий входные данные
+     * @param response
+     * @throws IOException
+     */
+        public static void handleGetLogs (HttpServletRequest request, HttpServletResponse response) throws IOException {
+            String startDateStr = request.getParameter("startDate");
+            String endDateStr = request.getParameter("endDate");
+            String filterUserId = request.getParameter("userId");
+            String opType = request.getParameter("operationType");
+            String sql = "SELECT * FROM operations_log\n" +
+                    "WHERE operation_date BETWEEN ? AND ?\n" +
+                    "  AND ( ? = '' OR user_id = ? )\n" +
+                    "  AND ( ? = '' OR operation_type = ? )\n" +
+                    "ORDER BY operation_date DESC";
+
+            java.time.LocalDate now = java.time.LocalDate.now();
+            java.time.LocalDateTime startDateTime;
+            java.time.LocalDateTime endDateTime;
+
+            try {
+                if ((startDateStr == null || startDateStr.isEmpty()) && (endDateStr == null || endDateStr.isEmpty())) {
+                    startDateTime = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
+                    endDateTime = now.atTime(23, 59, 59);
+                } else if (endDateStr == null || endDateStr.isEmpty()) {
+                    startDateTime = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+                    endDateTime = now.atTime(23, 59, 59);
+
+                    if (startDateTime.toLocalDate().isAfter(now)) {
+                        request.getSession().setAttribute("successMessage", false);
+                        response.sendRedirect("/admin/dashboard");
+                        return;
+                    }
+                } else if (startDateStr == null || startDateStr.isEmpty()) {
+                    startDateTime = java.time.LocalDate.parse(endDateStr).atStartOfDay();
+                    endDateTime = java.time.LocalDate.parse(endDateStr).atTime(23, 59, 59);
+                } else {
+                    startDateTime = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+                    endDateTime = java.time.LocalDate.parse(endDateStr).atTime(23, 59, 59);
+                }
+
+                if (startDateTime.isAfter(endDateTime)) {
+                    request.getSession().setAttribute("successMessage", false);
+                    response.sendRedirect("/admin/dashboard");
+                    return;
+                }
+
+                try (Connection conn = DBConnector.getConnection()) {
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+
+                    pstmt.setObject(1, startDateTime);
+                    pstmt.setObject(2, endDateTime);
+                    pstmt.setString(3, filterUserId);
+                    pstmt.setInt(4, "".equals(filterUserId) ? 0 : Integer.parseInt(filterUserId));
+                    pstmt.setString(5, opType);
+                    pstmt.setString(6, opType);
+
+                    ResultSet rs = pstmt.executeQuery();
+                    ArrayList<Operation> logs = new ArrayList<>();
+
+                    while (rs.next()) {
+                        Operation op = new Operation();
+                        op.setOperationDate(rs.getTimestamp("operation_date").toString());
+                        op.setUserId(rs.getInt("user_id"));
+                        op.setOperationType(rs.getString("operation_type"));
+                        op.setComment(rs.getString("comment"));
+
+                        if (rs.getString("operation_type").equals("приход")) {
+                            String getNoteNumber = "SELECT * FROM incoming_invoices WHERE id = ?";
+                            PreparedStatement psNoteNumber = conn.prepareStatement(getNoteNumber);
+                            psNoteNumber.setInt(1, rs.getInt("document_id"));
+                            ResultSet noteNumber = psNoteNumber.executeQuery();
+                            while (noteNumber.next()) {
+                                op.setInvoiceNumber(noteNumber.getString("invoice_number"));
+                            }
+                        }
+
+                        logs.add(op);
+                    }
+                    request.getSession().setAttribute("logs", logs);
+                    request.getSession().removeAttribute("successMessage");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                request.getSession().setAttribute("successMessage", false);
             }
         }
     }
