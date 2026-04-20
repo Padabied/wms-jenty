@@ -1,4 +1,6 @@
-
+/**
+ * Скрывает все секции.
+ */
     function hideAllSections() {
     var sections = ['successMessage', 'categoryListSection', 'addCategorySection',
     'deleteCategorySection', 'usersListSection', 'addUserSection', 'deleteUserSection', 'logSelectSection',
@@ -9,7 +11,10 @@
 });
 }
 
-    // функция обработки нажатия на кнопки
+/**
+ * Обработка нажатия на кнопку. Функция делает видимой установленную секцию.
+ * @param action
+ */
     function handleButtonClick(action) {
 
     switch(action) {
@@ -54,6 +59,11 @@
 }
 }
 
+/**
+ * Функция собирает данные из формы корректировки товара, выполняет запрос к сервлету для изменения
+ * значения количества товара на складе. В случае успеха или неудачи делает видимым один из установленных
+ * элементов.
+ */
     function showAdjustmentConfirm() {
     const form = document.getElementById('adjustmentForm');
     const itemId = form.itemId.value;
@@ -90,6 +100,9 @@
 };
 }
 
+/**
+ * Закрытие модального окна с подтверждением выполнения операции корректировки количества товаров.
+ */
     function closeModal() {
     document.getElementById('confirmModal').style.display = 'none';
 }

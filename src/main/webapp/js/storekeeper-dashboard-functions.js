@@ -1,4 +1,6 @@
-
+/**
+ * Скрытие секций.
+ */
     function hideAllSections() {
     var sections = ['successMessage', 'logSelectSection',
     'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection',
@@ -9,6 +11,10 @@
 });
 }
 
+/**
+ * Функция собирает данные о товарах, подлежащих закупке (функция инвенторизации кладовщика) и записывает
+ * в .txt файл, оформляя текст в установленном формате.
+ */
     function exportInventory() {
     var table = document.querySelector('#inventorySection .user-table');
     var rows = table.querySelectorAll('tbody tr');
@@ -90,7 +96,10 @@
     URL.revokeObjectURL(url);
 }
 
-    <!-- добавление товара в список в расходной накладной -->
+/**
+ * Функция добавляет товар в список расходной накладной. Производится проверка корректности введенных
+ * данных, затем в случае успеха обновляется таблица добавленных файлов в накладной.
+ */
     function addItem() {
     var article = document.getElementById('article').value.trim();
     var value = document.getElementById('value').value;
@@ -141,7 +150,9 @@
 });
 }
 
-    <!-- обновление списка добавленных товаров в расходной накладной -->
+/**
+ * Обновление списка добавленных товаров в расходной накладной.
+ */
     function updateTableBody(item) {
     var tbody = document.getElementById('itemsBody');
 
@@ -155,7 +166,10 @@
     '<td>' + item.value + '</td>';
 }
 
-    <!-- очистка формы и внутреннего списка сервлета после закрытия формы расхода-->
+/**
+ * Очистка полей формы и внутреннего списка в сервлете после закрытия формы расхода.
+ */
+
     function clearOutgoData() {
     var tbody = document.getElementById('itemsBody');
     if (tbody) {
@@ -181,7 +195,11 @@
 }).catch(err => console.error('Ошибка при очистке списка на сервере:', err));
 }
 
-    <!-- отправка данных для оформления расхода -->
+/**
+ * Оформление расходной накладной. Функция производит сбор входных данных из полей формы,
+ * затем оформляет запрос на оформление накладной к серверу.
+ */
+
     function submitOutgo() {
     const receiver = document.getElementsByName('receiverName')[0].value.trim();
     const regNum = document.getElementsByName('regNumber')[0].value.trim();
@@ -214,7 +232,12 @@
     form.submit();
 }
 
-    <!-- добавление товара в список приходной накладной -->
+/**
+ * Добавление товара в список приходной накладной. Данные собираются из формы, после чего происзводится
+ * проверка корректности введенных данных. В случае успеха выполняется обновление таблицы добавленных
+ * товаров.
+ */
+
     function addIncomeItem() {
     var article = document.getElementById('incomeItemArticle').value.trim();
     var value = document.getElementById('incomeItemValue').value;
@@ -271,7 +294,10 @@
 });
 }
 
-    <!-- обновление списка добавленных товаров в приходной накладной -->
+/**
+ * Обновление списка добавленных товаров в приходной накладной.
+ */
+
     function updateIncomeTableBody(item) {
     var tbody = document.getElementById('incomeItemsBody');
 
@@ -285,7 +311,11 @@
     '<td>' + item.value + '</td>';
 }
 
-    <!-- сохранение нового товара в список приходной накладной-->
+/**
+ * Сохранение товара, ранее не существующего в таблице item в список newItems для
+ * дальнейшего оформления накладной прихода.
+ */
+
     function saveNewItemToList() {
     const article = document.getElementById('incomeItemArticle').value.trim();
     const value = document.getElementById('incomeItemValue').value;
@@ -323,13 +353,20 @@
 });
 }
 
+/**
+ * Закрытие модального окна создания нового товара в таблице item базы данных.
+ */
     function closeModal() {
     document.getElementById('newItemModal').style.display = 'none';
     document.getElementById('modalOverlay').style.display = 'none';
-    // Очистить поля модалки
     document.getElementById('newName').value = '';
     document.getElementById('newBrand').value = '';
 }
+
+/**
+ * Оформление накладной прихода. Функция собирает информацию из формы,производит проверку корректности
+ * введенных данных, после чего выполняет запрос на сервлет.
+ */
 
     function submitIncome() {
     const noteNumber = document.getElementsByName('receiptNoteNumber')[0].value.trim();
@@ -368,7 +405,10 @@
     form.submit();
 }
 
-
+/**
+ * Обработка нажатия на кнопки навигационной панели.
+ * @param action определяет нажатую кнопку.
+ */
     function handleButtonClick(action) {
 
     hideAllSections();
