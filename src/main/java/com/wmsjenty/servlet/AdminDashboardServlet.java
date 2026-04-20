@@ -1,22 +1,13 @@
 package com.wmsjenty.servlet;
 
 import com.wmsjenty.model.Category;
-import com.wmsjenty.model.Operation;
 import com.wmsjenty.model.User;
-import com.wmsjenty.util.DBConnector;
 import com.wmsjenty.util.DBDataLoader;
-import com.wmsjenty.util.PasswordHasher;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "AdminDashboardServlet", value = "/admin/dashboard")
@@ -37,17 +28,17 @@ public class AdminDashboardServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if ("getItemInfo".equals(action)) {
-            DBDataLoader.handleGetItemInfo(request, response);
+            DBDataLoader.getItemInfo(request, response);
             request.getSession().removeAttribute("logs");
             return;
         }
         if ("search_items".equals(action)) {
-            DBDataLoader.handleSearchItems(request, response);
+            DBDataLoader.searchItems(request, response);
             request.getSession().removeAttribute("logs");
             return;
         }
         if ("get_logs".equals(action)) {
-            DBDataLoader.handleGetLogs(request, response);
+            DBDataLoader.getLogs(request, response);
             response.sendRedirect("/admin/dashboard");
             return;
         }
@@ -68,23 +59,23 @@ public class AdminDashboardServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if (action.equals("add_category")) {
-            DBDataLoader.handleAddCategory(request, response);
+            DBDataLoader.addCategory(request, response);
             response.sendRedirect("/admin/dashboard");
         }
         else if (action.equals("delete_category")) {
-            DBDataLoader.handleDeleteCategory (request, response);
+            DBDataLoader.deleteCategory(request, response);
             response.sendRedirect("/admin/dashboard");
         }
         else if (action.equals("add_user")) {
-            DBDataLoader.handleAddUser(request, response);
+            DBDataLoader.addUser(request, response);
             response.sendRedirect("/admin/dashboard");
         }
         else if (action.equals("delete_user")) {
-            DBDataLoader.handleDeleteUser(request, response);
+            DBDataLoader.deleteUser(request, response);
             response.sendRedirect("/admin/dashboard");
         }
         else if (action.equals("adjustment")) {
-            DBDataLoader.handleAdjustItemValue (request, response);
+            DBDataLoader.adjustItemValue(request, response);
             response.sendRedirect("/admin/dashboard");
         }
     }

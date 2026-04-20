@@ -10,9 +10,7 @@ import javax.servlet.annotation.*;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @WebServlet(name = "StorekeeperDashboardServlet", value = "/storekeeper/dashboard")
@@ -34,17 +32,17 @@ public class StorekeeperDashboardServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if ("getItemInfo".equals(action)) {
-            DBDataLoader.handleGetItemInfo(request, response);
+            DBDataLoader.getItemInfo(request, response);
             request.getSession().removeAttribute("logs");
             return;
         }
         if ("search_items".equals(action)) {
-            DBDataLoader.handleSearchItems(request, response);
+            DBDataLoader.searchItems(request, response);
             request.getSession().removeAttribute("logs");
             return;
         }
         if ("get_logs".equals(action)) {
-            DBDataLoader.handleGetLogsStorekeeper(request, response);
+            DBDataLoader.getLogsStorekeeper(request, response);
             response.sendRedirect("/storekeeper/dashboard");
             return;
         }
@@ -181,11 +179,11 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/storekeeper/dashboard");
         }
         if ("add_new_item_temp".equals(action)) {
-            DBDataLoader.handleAddNotExistingItemToListForIncome(request, response);
+            DBDataLoader.addNotExistingItemToListForIncome(request, response);
             return;
         }
         if ("confirm_income".equals(action)) {
-            DBDataLoader.handleConfirmIncome(request, response);
+            DBDataLoader.confirmIncome(request, response);
         }
     }
 

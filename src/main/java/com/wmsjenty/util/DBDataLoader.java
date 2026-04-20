@@ -16,8 +16,8 @@ import java.util.Map;
 
 public class DBDataLoader {
     /**
-     * Функция для получения списка всех категорий
-     * @return список, содержащий все категории в таблице category
+     * Функция для получения списка всех категорий.
+     * @return список, содержащий все категории в таблице category.
      */
     public static List<Category> loadAllCategories() {
         List<Category> categories = new ArrayList<>();
@@ -100,7 +100,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleGetItemInfo(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void getItemInfo(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String itemId = request.getParameter("itemId");
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -131,7 +131,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleSearchItems(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void searchItems(HttpServletRequest request, HttpServletResponse response) throws IOException {
     HttpSession session = request.getSession();
     User user = (User) session.getAttribute("user");
 
@@ -214,8 +214,8 @@ public class DBDataLoader {
 }
 
     /**
-     * Функция для получения имени пользователя с заданным ID
-     * @param userId ID пользователя в системе
+     * Функция для получения имени пользователя с заданным ID.
+     * @param userId ID пользователя в системе.
      * @return
      */
     public static String getUserNameById(Integer userId) {
@@ -297,7 +297,7 @@ public class DBDataLoader {
 
     /**
      * Функция для проверки наличия в базе данных достаточного количества товара с указанным артикулом.
-     * Проверяется наличие товара заданного артикула, а также наличие указанного количества
+     * Проверяется наличие товара заданного артикула, а также наличие указанного количества.
      * @param article артикул товара.
      * @param value запрашиваемое количество.
      * @return найденный товар, либо null, если товар не найден или запрашиваемое количество не соответствует
@@ -566,7 +566,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-        public static void handleGetLogs (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        public static void getLogs(HttpServletRequest request, HttpServletResponse response) {
             String startDateStr = request.getParameter("startDate");
             String endDateStr = request.getParameter("endDate");
             String filterUserId = request.getParameter("userId");
@@ -655,7 +655,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-        public static void handleAddCategory (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        public static void addCategory(HttpServletRequest request, HttpServletResponse response) throws IOException {
             String name = request.getParameter("categoryName");
             String pIdString = request.getParameter("parentId");
             String sqlStatement = "INSERT INTO category (name, parent_id) VALUES (?, ?)";
@@ -704,7 +704,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleDeleteCategory (HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void deleteCategory(HttpServletRequest request, HttpServletResponse response) throws IOException {
             String idString = request.getParameter("id");
             Integer id;
             String name = null;
@@ -754,7 +754,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleAddUser (HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void addUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String name = request.getParameter("name");
         String login = request.getParameter("login");
         String password = request.getParameter("password");
@@ -806,7 +806,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleDeleteUser (HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void deleteUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String idString = request.getParameter("id");
         Integer id;
         String name = null;
@@ -864,7 +864,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleAdjustItemValue (HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void adjustItemValue(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String itemIdString = request.getParameter("itemId");
         String newValueString = request.getParameter("value");
         String comment = request.getParameter("comment");
@@ -933,7 +933,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void handleGetLogsStorekeeper (HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void getLogsStorekeeper(HttpServletRequest request, HttpServletResponse response) {
         String startDateStr = request.getParameter("startDate");
         String endDateStr = request.getParameter("endDate");
         String opType = request.getParameter("operationType");
@@ -1014,13 +1014,12 @@ public class DBDataLoader {
     }
 
     /**
-     * Добавление товара, ранее не существовавшего в таблице item в список newItems. Функция проверяет,
-     * существует ли запись с заданным
+     * Добавление товара, ранее не существовавшего в таблице item в список newItems.
      * @param request
      * @param response
      * @throws IOException
      */
-    public static void handleAddNotExistingItemToListForIncome (HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void addNotExistingItemToListForIncome(HttpServletRequest request, HttpServletResponse response) throws IOException {
         ArrayList<Item> newItems = (ArrayList<Item>) request.getSession().getAttribute("newItems");
         String article = request.getParameter("article");
         String name = request.getParameter("name");
@@ -1047,14 +1046,14 @@ public class DBDataLoader {
     }
 
     /**
-     * Оформление прихода товара. Для товаров, ранее не существовавших в таблице item выполняется операция ADD,
+     * Оформление прихода товара. Для товаров, ранее не существовавших в таблице item выполняется операция INSERT,
      * для товаров, уже существующих в БД, выполняется операция UPDATE с изменением актуального количества товара.
      * @param request
      * @param response
      * @throws IOException
      * @throws ServletException
      */
-    public static void handleConfirmIncome(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public static void confirmIncome(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         String noteNumber = request.getParameter("noteNumber");
         String supplierName = request.getParameter("supplierName");
         int userId = (int) request.getSession().getAttribute("userId");
