@@ -362,13 +362,20 @@ public class DBDataLoader {
      * @param items список товаров к списанию в формате "Товар-Количество".
      * @return id созданной накладной в случае успеха, либо -1 в случае ошибки.
      */
-    public static int saveFullInvoice(String receiver, String regNum, int userId, HashMap<Item, Integer> items) {
+    public static int processOutgo(String receiver, String regNum, int userId, HashMap<Item, Integer> items) {
         Connection conn = null;
         int generatedId = -1;
 
         try {
             conn =DBConnector.getConnection();
             conn.setAutoCommit(false);
+
+            // Дополнительная проверка на некорректные значения
+            for (Map.Entry<Item, Integer> entry : items.entrySet()) {
+                if (checkItemAvailable(entry.getKey().getArticle(), entry.getValue()) == null) {
+                    return -1;
+                }
+            }
 
             // создание записи в outgoing_invoices
             String sqlInvoice = "INSERT INTO outgoing_invoices (receiver_name, truck_reg_number, outgo_date, outgo_creator_id) VALUES (?, ?, NOW(), ?)";
@@ -812,7 +819,7 @@ public class DBDataLoader {
         String name = null;
         String sqlStatement;
         boolean operationsExist = false;
-        if (idString != null && !idString.isEmpty()) {
+        if (idString != null && !idString.isEmpty() && !idString.equals("1")) {
             id = Integer.parseInt(idString);
             ArrayList<User> users = (ArrayList<User>) request.getSession().getAttribute("userList");
             for (User user : users) {
@@ -1048,6 +1055,7 @@ public class DBDataLoader {
     /**
      * Оформление прихода товара. Для товаров, ранее не существовавших в таблице item выполняется операция INSERT,
      * для товаров, уже существующих в БД, выполняется операция UPDATE с изменением актуального количества товара.
+     * В конце выполняется внесение записи в таблицу operations_log.
      * @param request
      * @param response
      * @throws IOException

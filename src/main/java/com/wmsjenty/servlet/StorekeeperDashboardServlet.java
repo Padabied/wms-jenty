@@ -151,7 +151,7 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             User user = (User) session.getAttribute("user");
 
             if (user != null && outgoItems != null && !outgoItems.isEmpty()) {
-                int documentId = DBDataLoader.saveFullInvoice(receiver, regNum, user.getId(), outgoItems);
+                int documentId = DBDataLoader.processOutgo(receiver, regNum, user.getId(), outgoItems);
 
                 if (documentId > 0) {
                     clearOutgoItemsList();
@@ -159,13 +159,14 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                     session.setAttribute("successMessage", true);
                     //внесение лога
                     try (Connection conn = DBConnector.getConnection()) {
-                        String sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, document_id) VALUES (NOW(), ?, ?, ?)";
+                        String sqlStatement = "INSERT INTO operations_log (operation_date, user_id, operation_type, document_id, comment) VALUES (NOW(), ?, ?, ?, ?)";
                         PreparedStatement pstmt = conn.prepareStatement(sqlStatement);
                         int id = user.getId();
                         String operationType = "расход";
                         pstmt.setInt(1, id);
                         pstmt.setString(2, operationType);
                         pstmt.setInt(3, documentId);
+                        pstmt.setString(4, regNum);
                         pstmt.executeUpdate();
                     }
                     catch (SQLException e) {
