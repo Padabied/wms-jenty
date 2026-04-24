@@ -351,7 +351,7 @@
     <i class="fa-solid fa-circle-exclamation"></i> Операция не выполнена. Проверьте корректность введенных данных.
 </div>
 <%
-    session.removeAttribute("categorySuccess");
+    session.removeAttribute("successMessage");
     }
 %>
 

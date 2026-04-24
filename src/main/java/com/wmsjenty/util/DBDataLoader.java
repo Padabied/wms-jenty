@@ -598,7 +598,7 @@ public class DBDataLoader {
 
                     if (startDateTime.toLocalDate().isAfter(now)) {
                         request.getSession().setAttribute("successMessage", false);
-                        response.sendRedirect("/admin/dashboard");
+                        //response.sendRedirect("/admin/dashboard");
                         return;
                     }
                 } else if (startDateStr == null || startDateStr.isEmpty()) {
@@ -611,7 +611,7 @@ public class DBDataLoader {
 
                 if (startDateTime.isAfter(endDateTime)) {
                     request.getSession().setAttribute("successMessage", false);
-                    response.sendRedirect("/admin/dashboard");
+                    //response.sendRedirect("/admin/dashboard");
                     return;
                 }
 
@@ -662,7 +662,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-        public static void addCategory(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        public static void addCategory(HttpServletRequest request, HttpServletResponse response) {
             String name = request.getParameter("categoryName");
             String pIdString = request.getParameter("parentId");
             String sqlStatement = "INSERT INTO category (name, parent_id) VALUES (?, ?)";
@@ -670,7 +670,7 @@ public class DBDataLoader {
             //Проверка на ячейки с пробелами
             if (name == null || name.trim().isEmpty()) {
                 request.getSession().setAttribute("successMessage", false);
-                response.sendRedirect("/admin/dashboard");
+                //response.sendRedirect("/admin/dashboard");
                 return;
             }
             Integer parentId = null;
@@ -711,7 +711,7 @@ public class DBDataLoader {
      * @param response
      * @throws IOException
      */
-    public static void deleteCategory(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void deleteCategory(HttpServletRequest request, HttpServletResponse response) {
             String idString = request.getParameter("id");
             Integer id;
             String name = null;
@@ -728,7 +728,7 @@ public class DBDataLoader {
             }
             else {
                 request.getSession().setAttribute("successMessage", false);
-                response.sendRedirect("/admin/dashboard");
+                //response.sendRedirect("/admin/dashboard");
                 return;
             }
 
@@ -775,7 +775,7 @@ public class DBDataLoader {
                 confirmPassword == null || confirmPassword.trim().isEmpty() ||
                 role == null || !password.equals(confirmPassword)) {
             request.getSession().setAttribute("successMessage", false);
-            response.sendRedirect("/admin/dashboard");
+            //response.sendRedirect("/admin/dashboard");
             return;
         }
         String hashedPassword = PasswordHasher.encode(password);
@@ -832,7 +832,7 @@ public class DBDataLoader {
         }
         else {
             request.getSession().setAttribute("successMessage", false);
-            response.sendRedirect("/admin/dashboard");
+            //response.sendRedirect("/admin/dashboard");
             return;
         }
         if (!operationsExist) {
@@ -884,13 +884,13 @@ public class DBDataLoader {
             newValue = Integer.parseInt(newValueString);
             if (newValue < 0) {
                 request.getSession().setAttribute("successMessage", false);
-                response.sendRedirect("/admin/dashboard");
+                //response.sendRedirect("/admin/dashboard");
                 return;
             }
         }
         else {
             request.getSession().setAttribute("successMessage", false);
-            response.sendRedirect("/admin/dashboard");
+            //response.sendRedirect("/admin/dashboard");
             return;
         }
 
@@ -903,7 +903,7 @@ public class DBDataLoader {
             ResultSet rs = pstmt.executeQuery();
             if (!rs.next()) {
                 request.getSession().setAttribute("successMessage", false);
-                response.sendRedirect("/admin/dashboard");
+                //response.sendRedirect("/admin/dashboard");
                 return;
             }
             String itemName = rs.getString("name");
@@ -965,7 +965,7 @@ public class DBDataLoader {
 
                 if (startDateTime.toLocalDate().isAfter(now)) {
                     request.getSession().setAttribute("successMessage", false);
-                    response.sendRedirect("/storekeeper/dashboard");
+                    //response.sendRedirect("/storekeeper/dashboard");
                     return;
                 }
             } else if (startDateStr == null || startDateStr.isEmpty()) {
@@ -978,7 +978,7 @@ public class DBDataLoader {
 
             if (startDateTime.isAfter(endDateTime)) {
                 request.getSession().setAttribute("successMessage", false);
-                response.sendRedirect("/storekeeper/dashboard");
+                //response.sendRedirect("/storekeeper/dashboard");
                 return;
             }
 
