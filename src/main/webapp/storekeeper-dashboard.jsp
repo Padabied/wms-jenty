@@ -33,7 +33,11 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
         }
 
         .nav-links {
@@ -127,6 +131,10 @@
             right: 40px;
             width: 200px;
             height: auto;
+            transition: opacity 0.3s ease;
+        }
+        .logo:hover {
+            opacity: 0.3;
         }
 
         .category-container {
