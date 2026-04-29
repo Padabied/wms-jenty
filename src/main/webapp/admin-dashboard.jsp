@@ -24,6 +24,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f5f5;
+            padding-top: 70px;
         }
 
         .navbar {
