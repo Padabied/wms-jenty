@@ -876,21 +876,26 @@ public class DBDataLoader {
         String newValueString = request.getParameter("value");
         String comment = request.getParameter("comment");
         Integer itemId;
-        Integer newValue;
+        Integer newValue = null;
 
         if (itemIdString != null && !itemIdString.isEmpty() &&
                 newValueString != null && !newValueString.isEmpty()) {
             itemId = Integer.parseInt(itemIdString);
-            newValue = Integer.parseInt(newValueString);
+            try {
+                newValue = Integer.parseInt(newValueString);
+            }
+            catch (NumberFormatException e) {
+                request.getSession().setAttribute("successMessage", false);
+                return;
+            }
+
             if (newValue < 0) {
                 request.getSession().setAttribute("successMessage", false);
-                //response.sendRedirect("/admin/dashboard");
                 return;
             }
         }
         else {
             request.getSession().setAttribute("successMessage", false);
-            //response.sendRedirect("/admin/dashboard");
             return;
         }
 
@@ -903,7 +908,6 @@ public class DBDataLoader {
             ResultSet rs = pstmt.executeQuery();
             if (!rs.next()) {
                 request.getSession().setAttribute("successMessage", false);
-                //response.sendRedirect("/admin/dashboard");
                 return;
             }
             String itemName = rs.getString("name");

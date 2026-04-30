@@ -11,9 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <meta charset="UTF-8">
     <script>const CONTEXT_PATH = '${pageContext.request.contextPath}';</script>
-    <script src="${pageContext.request.contextPath}/js/admin-dashboard-functions.js"></script>
+    <script src="${pageContext.request.contextPath}/js/admin-dashboard-functions.js?v=3"></script>
     <title>WMS-Jenty Admin</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/logo.svg">
+
     <style>
         * {
             margin: 0;
@@ -553,7 +554,7 @@
 <!-- секция "удаление аккаунта -->
 <div id="deleteUserSection" class="user-form-card category-container" style="display: none;">
     <h2>Удаление аккаунта</h2>
-    <form action="/admin/dashboard" method="POST">
+    <form id="deleteUserForm" action="/admin/dashboard" method="POST">
         <input type="hidden" name="action" value="delete_user">
         <div class="form-group">
             <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666; font-weight: 500;">
@@ -565,22 +566,38 @@
                     ArrayList<User> accountsList = (ArrayList<User>) session.getAttribute("userList");
                     if (accountsList != null) {
                         for (User user : accountsList) {
+                            if (user.isActive() && user.getId() != 1) {
                 %>
                 <option value="<%= user.getId() %>"><%= user.getName() %></option>
                 <%
+                        }
                         }
                     }
                 %>
             </select>
             <small style="display: block; margin-top: 10px; color: #a94442; font-size: 12px;">
-                <i class="fa-solid fa-triangle-exclamation"></i> Если выбранный пользователь выполнял операции, аккаунт будет деактивирован
+                <i class="fa-solid fa-triangle-exclamation"></i> Если у выбранного пользователя есть история операций, аккаунт будет деактивирован
             </small>
         </div>
 
-        <button type="submit" class="btn-submit" style="background-color: #d9534f;">
+        <button type="button" onclick="showDeleteUserConfirm()" class="btn-submit" style="background-color: #d9534f;">
             <i class="fa-solid fa-ban"></i> Удалить аккаунт
         </button>
     </form>
+</div>
+
+<!-- Модальное окно подтверждения удаления аккаунта -->
+<div id="confirmDeleteUserModal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(3px);">
+    <div class="user-form-card" style="position: relative; top: 50%; transform: translateY(-50%); max-width: 450px; margin: auto;">
+        <h2 style="color: #212020;"><i class="fa-solid fa-triangle-exclamation"></i> Подтвердите удаление аккаунта</h2>
+        <div id="modalDeleteContent" style="margin-bottom: 25px; line-height: 1.6; font-size: 15px;">
+            <p>Если у пользователя есть история операций, аккаунт будет деактивирован</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" id="finalDeleteUserBtn" class="btn-submit" style="flex: 1; background-color: #d9534f;">Удалить</button>
+            <button type="button" onclick="closeDeleteModal()" class="btn-submit" style="flex: 1; background-color: #666;">Отмена</button>
+        </div>
+    </div>
 </div>
 
 <!-- секция "выбор операций для журнала" -->

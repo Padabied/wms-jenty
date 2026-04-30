@@ -106,3 +106,23 @@
     function closeModal() {
     document.getElementById('confirmModal').style.display = 'none';
 }
+
+/**
+ * Открытие модального окна с подтверждением удаления аккаунта
+ */
+function showDeleteUserConfirm() {
+
+    document.getElementById('confirmDeleteUserModal').style.display = 'block';
+
+    document.getElementById('finalDeleteUserBtn').onclick = function() {
+        document.getElementById('deleteUserForm').submit();
+    };
+}
+
+/**
+ * Закрытие модального окна подтверждения удаления аккаунта
+ */
+function closeDeleteModal() {
+    document.getElementById('confirmDeleteUserModal').style.display = 'none';
+}
+
