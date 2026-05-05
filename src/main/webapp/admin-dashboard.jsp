@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <meta charset="UTF-8">
     <script>const CONTEXT_PATH = '${pageContext.request.contextPath}';</script>
-    <script src="${pageContext.request.contextPath}/js/admin-dashboard-functions.js?v=3"></script>
+    <script src="${pageContext.request.contextPath}/js/admin-dashboard-functions.js?v=6"></script>
     <title>WMS-Jenty Admin</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/logo.svg">
 
@@ -745,6 +745,15 @@
             <button type="button" id="finalConfirmBtn" class="btn-submit" style="flex: 1;">Подтвердить</button>
             <button type="button" onclick="closeModal()" class="btn-submit" style="flex: 1; background-color: #666;">Отмена</button>
         </div>
+    </div>
+</div>
+
+<!-- модальное окно для ошибки при корректировке остатков -->
+<div id="errorModal" style="display: none; position: fixed; z-index: 2001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(3px);">
+    <div class="user-form-card" style="position: relative; top: 50%; transform: translateY(-50%); max-width: 400px; margin: auto; text-align: center;">
+        <h2 style="color: #ce1108;"><i class="fa-solid fa-circle-exclamation"></i> Ошибка</h2>
+        <p id="errorMessage" style="margin: 20px 0; font-size: 16px;"></p>
+        <button onclick="document.getElementById('errorModal').style.display = 'none'" class="btn-submit">OK</button>
     </div>
 </div>
 

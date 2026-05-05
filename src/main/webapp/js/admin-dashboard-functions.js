@@ -64,40 +64,39 @@
  * значения количества товара на складе. В случае успеха или неудачи делает видимым один из установленных
  * элементов.
  */
-    function showAdjustmentConfirm() {
+function showAdjustmentConfirm() {
     const form = document.getElementById('adjustmentForm');
     const itemId = form.itemId.value;
     const newValue = form.value.value;
 
     if (!itemId || !newValue) {
-    alert("Заполните ID товара и новое значение");
-    return;
-}
-
-    document.getElementById('confirmModal').style.display = 'block';
-    document.getElementById('confirmItemId').innerText = itemId;
-    document.getElementById('confirmNewValue').innerText = newValue;
-    document.getElementById('confirmItemName').innerText = "Загрузка...";
-    document.getElementById('confirmOldValue').innerText = "...";
+        alert("Заполните ID товара и новое значение");
+        return;
+    }
 
     // получить данные о товаре
     fetch(CONTEXT_PATH + '/admin/dashboard?action=getItemInfo&itemId=' + itemId)
-    .then(response => response.json())
-    .then(data => {
-    if (data.error) {
-    document.getElementById('confirmItemName').innerText = "Товар не найден";
-} else {
-    document.getElementById('confirmItemName').innerText = data.name;
-    document.getElementById('confirmOldValue').innerText = data.value;
-}
-})
-    .catch(err => {
-    document.getElementById('confirmItemName').innerText = "Ошибка загрузки";
-});
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('errorMessage').innerText = "Товар с ID " + itemId + " не найден";
+                document.getElementById('errorModal').style.display = 'block';
+            } else {
+                document.getElementById('confirmItemId').innerText = itemId;
+                document.getElementById('confirmNewValue').innerText = newValue;
+                document.getElementById('confirmItemName').innerText = data.name;
+                document.getElementById('confirmOldValue').innerText = data.value;
+                document.getElementById('confirmModal').style.display = 'block';
+            }
+        })
+        .catch(err => {
+            document.getElementById('errorMessage').innerText = "Ошибка при загрузке данных о товаре";
+            document.getElementById('errorModal').style.display = 'block';
+        });
 
     document.getElementById('finalConfirmBtn').onclick = function() {
-    form.submit();
-};
+        form.submit();
+    };
 }
 
 /**
