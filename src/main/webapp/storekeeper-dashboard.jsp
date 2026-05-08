@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <meta charset="UTF-8">
     <script>const CONTEXT_PATH = '${pageContext.request.contextPath}';</script>
-    <script src="${pageContext.request.contextPath}/js/storekeeper-dashboard-functions.js"></script>
+    <script src="${pageContext.request.contextPath}/js/storekeeper-dashboard-functions.js?v=5"></script>
     <title>WMS-Jenty Storekeeper</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/logo.svg">
     <style>
@@ -840,9 +840,12 @@
             </div>
         </div>
     </div>
-    <div style="margin-top: 30px; text-align: center;">
-        <button type="button" onclick="submitIncome()" class="btn-submit" style="background-color: #28521a; width: 100%">
+    <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
+        <button type="button" onclick="submitIncome()" class="btn-submit" style="background-color: #28521a; width: 33%;">
             <i class="fa-solid fa-check"></i> Оформить приход
+        </button>
+        <button type="button" onclick="clearIncomeForm()" class="btn-submit" style="background-color: rgb(215,14,6); width: 33%;">
+            <i class="fa-solid fa-trash"></i> Очистить
         </button>
     </div>
 </div>

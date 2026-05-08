@@ -185,6 +185,12 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             DBDataLoader.addNotExistingItemToListForIncome(request, response);
             return;
         }
+        if ("clear_income_items".equals(action)) {
+            session.removeAttribute("incomeItems");
+            session.removeAttribute("newItems");
+            //response.setStatus(200);
+            return;
+        }
         if ("confirm_income".equals(action)) {
             DBDataLoader.confirmIncome(request, response);
         }

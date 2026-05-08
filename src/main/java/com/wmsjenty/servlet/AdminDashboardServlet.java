@@ -38,6 +38,7 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         }
         if ("get_logs".equals(action)) {
+            request.getSession().removeAttribute("foundItems");
             DBDataLoader.getLogs(request, response);
             response.sendRedirect("/admin/dashboard");
             return;

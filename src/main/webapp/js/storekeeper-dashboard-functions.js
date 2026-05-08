@@ -2,6 +2,7 @@
  * Скрытие секций.
  */
     function hideAllSections() {
+
     var sections = ['successMessage', 'logSelectSection',
     'logResults', 'searchSection', 'searchResultsSection', 'forecastSection', 'inventorySection',
     'addOutgoSection', 'outgoLogSelect', 'outgoLogResults', 'addIncomeSection'];
@@ -410,7 +411,9 @@
  * @param action определяет нажатую кнопку.
  */
     function handleButtonClick(action) {
-
+    if (action !== 'income') {
+        clearIncomeForm();
+    }
     hideAllSections();
     if (action !== 'outgo_add') {
     clearOutgoData();
@@ -441,4 +444,37 @@
     default:
     alert('Действие: ' + action);
 }
+}
+
+/**
+ * Очистка формы прихода товара
+ */
+function clearIncomeForm() {
+    document.getElementsByName('receiptNoteNumber')[0].value = '';
+    document.getElementsByName('supplierName')[0].value = '';
+    document.getElementById('incomeItemArticle').value = '';
+    document.getElementById('incomeItemValue').value = '';
+    document.getElementById('newCategory').value = '';
+    document.getElementById('newMinVal').value = '';
+    document.getElementById('newRecVal').value = '';
+
+    var tbody = document.getElementById('incomeItemsBody');
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Товары не добавлены</td></tr>';
+
+    fetch('/storekeeper/dashboard?action=clear_income_items', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(function(response) {
+            if (response.ok) {
+                console.log('Данные прихода очищены');
+            }
+        })
+        .catch(function(err) {
+            console.error('Ошибка при очистке:', err);
+        });
+
+    var errorDiv = document.getElementById('incomeItemError');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
 }

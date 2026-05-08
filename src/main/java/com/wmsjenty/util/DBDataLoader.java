@@ -1096,7 +1096,7 @@ public class DBDataLoader {
         }
         else {
             request.setAttribute("error", "Ошибка при сохранении накладной");
-            request.getRequestDispatcher("/storekeeper/dashboard.jsp").forward(request, response);
+            request.getRequestDispatcher("/storekeeper-dashboard.jsp").forward(request, response);
         }
     }
 }
