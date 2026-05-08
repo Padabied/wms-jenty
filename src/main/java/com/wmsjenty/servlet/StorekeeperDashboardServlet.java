@@ -30,6 +30,7 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             return;
         }
 
+
         String action = request.getParameter("action");
         if ("getItemInfo".equals(action)) {
             DBDataLoader.getItemInfo(request, response);
@@ -42,6 +43,7 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             return;
         }
         if ("get_logs".equals(action)) {
+            request.getSession().removeAttribute("foundItems");
             DBDataLoader.getLogsStorekeeper(request, response);
             response.sendRedirect("/storekeeper/dashboard");
             return;
