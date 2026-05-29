@@ -698,7 +698,7 @@
     </div>
 
     <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
-    <button type="button" onclick="submitIncome()" class="btn-submit" style="background-color: #28521a; width: 33%;">
+    <button type="button" onclick="submitOutgo()" class="btn-submit" style="background-color: #28521a; width: 33%;">
         <i class="fa-solid fa-check"></i> Оформить расход
     </button>
     <button type="button" onclick="clearOutgoData()" class="btn-submit" style="background-color: rgb(215,14,6); width: 33%;">
