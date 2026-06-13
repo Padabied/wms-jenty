@@ -362,7 +362,7 @@ public class DBDataLoader {
      * @param items список товаров к списанию в формате "Товар-Количество".
      * @return id созданной накладной в случае успеха, либо -1 в случае ошибки.
      */
-    public static int processOutgo(String receiver, String regNum, int userId, HashMap<Item, Integer> items) {
+    public static int processOutgo(String receiver, String regNum, int userId, Map<Item, Integer> items) {
         Connection conn = null;
         int generatedId = -1;
 

@@ -415,7 +415,7 @@
         clearIncomeForm();
     }
     hideAllSections();
-    if (action !== 'outgo_add') {
+    if (action !== 'outgo_add' && action !== 'search') {
     clearOutgoData();
 }
 

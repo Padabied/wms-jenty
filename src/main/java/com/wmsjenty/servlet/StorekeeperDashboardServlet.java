@@ -12,11 +12,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @WebServlet(name = "StorekeeperDashboardServlet", value = "/storekeeper/dashboard")
 public class StorekeeperDashboardServlet extends HttpServlet {
 
-    private HashMap<Item, Integer> outgoItems = new HashMap<>();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -29,7 +29,6 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-
 
         String action = request.getParameter("action");
         if ("getItemInfo".equals(action)) {
@@ -67,7 +66,15 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             response.setCharacterEncoding("UTF-8");
 
             if (outgoItem != null) {
+                Map<Item, Integer> outgoItems = (Map<Item, Integer>) session.getAttribute("outgoItems");
+
+                if (outgoItems == null) {
+                    outgoItems = new ConcurrentHashMap<>();
+                    System.out.println("NEW MAP CREATED");  //3
+                }
+
                 outgoItems.put(outgoItem, quantity);
+                System.out.println("AFTER: " + outgoItems.size());  //4
                 session.setAttribute("outgoItems", outgoItems);
 
                 String json = "{\"status\":\"success\", \"article\":\"" + outgoItem.getArticle() +
@@ -81,7 +88,6 @@ public class StorekeeperDashboardServlet extends HttpServlet {
             return;
         }
         if ("clear_outgo".equals(action)) {
-            clearOutgoItemsList();
             session.removeAttribute("outgoItems");
             session.removeAttribute("check_item_success");
 
@@ -137,6 +143,9 @@ public class StorekeeperDashboardServlet extends HttpServlet {
         if (session.getAttribute("newItems") == null) {
             session.setAttribute("newItems", new ArrayList<Item>());
         }
+        if (session.getAttribute("outgoItems") == null) {
+            session.setAttribute("outgoItems", new ConcurrentHashMap<Item, Integer>());
+        }
 
         request.getRequestDispatcher("/storekeeper-dashboard.jsp").forward(request, response);
     }
@@ -152,11 +161,12 @@ public class StorekeeperDashboardServlet extends HttpServlet {
 
             User user = (User) session.getAttribute("user");
 
+            Map<Item, Integer> outgoItems = (Map<Item, Integer>) session.getAttribute("outgoItems");
             if (user != null && outgoItems != null && !outgoItems.isEmpty()) {
                 int documentId = DBDataLoader.processOutgo(receiver, regNum, user.getId(), outgoItems);
 
                 if (documentId > 0) {
-                    clearOutgoItemsList();
+                    session.removeAttribute("outgoItems");
                     session.setAttribute("outgo_status", "success");
                     session.setAttribute("successMessage", true);
                     //внесение лога
@@ -178,6 +188,7 @@ public class StorekeeperDashboardServlet extends HttpServlet {
                 else {
                     session.setAttribute("outgo_status", "error");
                 }
+                session.removeAttribute("outgoItems");
             }
             response.sendRedirect(request.getContextPath() + "/storekeeper/dashboard");
         }
@@ -188,15 +199,10 @@ public class StorekeeperDashboardServlet extends HttpServlet {
         if ("clear_income_items".equals(action)) {
             session.removeAttribute("incomeItems");
             session.removeAttribute("newItems");
-            //response.setStatus(200);
             return;
         }
         if ("confirm_income".equals(action)) {
             DBDataLoader.confirmIncome(request, response);
         }
-    }
-
-    public void clearOutgoItemsList() {
-        outgoItems.clear();
     }
 }
